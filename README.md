@@ -10,7 +10,15 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npm install
    ```
 
-2. Start the app
+2. Configure TMDB and Appwrite (writes `.env`)
+
+   ```bash
+   ./scripts/setup-wizard.sh
+   ```
+
+   An interactive walkthrough: it opens each console, says what to click, and saves the values it captures. Re-running it keeps values you've already saved.
+
+3. Start the app
 
    ```bash
    npx expo start
