@@ -60,6 +60,18 @@ test("returns matching movies once the user stops typing", async () => {
     expect(result.current.resultsFor).toBe("dune");
 });
 
+test("keeps the previous results, labelled with their query, while a new query loads", async () => {
+    const adapters = fakeAdapters({ searchMovies: fakeCatalog({ dune: [movie(1, "Dune")] }) });
+
+    const { result, rerender } = await renderSearch("dune", adapters);
+    await settle();
+    await rerender({ query: "dune part" });
+
+    expect(result.current.status).toBe("loading");
+    expect(result.current.movies).toEqual([movie(1, "Dune")]);
+    expect(result.current.resultsFor).toBe("dune");
+});
+
 test("waits for the user to stop typing before searching", async () => {
     const adapters = fakeAdapters();
 

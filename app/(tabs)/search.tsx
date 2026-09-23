@@ -13,6 +13,9 @@ const Search = () => {
 
   const { movies, resultsFor, status, error } = useMovieSearch(searchQuery, movieSearchAdapters)
 
+  // while a new query loads, the previous results stay up, dimmed and still labelled with their query
+  const showingPreviousResults = status === 'loading' && movies.length > 0
+
   return (
     <View className="flex-1 bg-primary">
         <Image source ={images.bg} className="flex-1 absolute w-full z-0" resizeMode="cover"/>
@@ -26,7 +29,8 @@ const Search = () => {
         columnWrapperStyle={{
           justifyContent: 'center',
           gap: 16,
-          marginVertical: 16
+          marginVertical: 16,
+          opacity: showingPreviousResults ? 0.5 : 1
         }}
         
           contentContainerStyle = {{ paddingBottom: 100 }}
@@ -56,7 +60,7 @@ const Search = () => {
                 )}
 
                 {
-                  status === 'success' && movies.length > 0 && (
+                  resultsFor && movies.length > 0 && (
                   <Text className="text-xl text-white font-bold">
                       Search Result for {' '}
                       <Text className="text-accent">{resultsFor}</Text>
