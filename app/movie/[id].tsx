@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native'
+import { View, Text, ScrollView, Image, TouchableOpacity, ActivityIndicator } from 'react-native'
 import React from 'react'
 import { router, useLocalSearchParams } from 'expo-router'
 import useFetch from '@/services/useFetch';
@@ -24,18 +24,33 @@ const MovieInfo = ({ label, value }: MovieInfoProps) => (
 const MovieDetails = () => {
   const { id } = useLocalSearchParams();
 
-  const { data: movie } = useFetch(() => fetchMovieDetails(id as string))
+  const { data: movie, status, error } = useFetch(() => fetchMovieDetails(id as string))
 
   return (
     <View className="bg-primary flex-1">
-      <ScrollView 
+      {status === 'loading' ? (
+        <ActivityIndicator
+          testID="movie-details-loading"
+          size="large"
+          color="#AB8BFF"
+          className="flex-1 self-center"
+        />
+      ) : status === 'error' ? (
+        <View className="flex-1 items-center justify-center px-5">
+          <Text className="text-white text-base text-center">{error?.message}</Text>
+        </View>
+      ) : (
+      <ScrollView
         contentContainerStyle={{paddingBottom: 80}}>
           <View>
-              <Image 
-                source={{ uri: `https://image.tmdb.org/t/p/w500${movie?.poster_path}`}}
-                className="w-full h-[550px]"
-                resizeMode="stretch"
-              />
+              {movie?.poster_path && (
+                <Image
+                  testID="movie-poster"
+                  source={{ uri: `https://image.tmdb.org/t/p/w500${movie.poster_path}`}}
+                  className="w-full h-[550px]"
+                  resizeMode="stretch"
+                />
+              )}
           </View>
           <View className="flex-col items-start justify-center mt-5 px-5">
                 <Text className="text-white font-bold text-xl">
@@ -69,6 +84,7 @@ const MovieDetails = () => {
                 <MovieInfo label="Production Companies" value={movie?.production_companies.map((c) => c.name).join(' - ') || 'N/A'} />
           </View>
       </ScrollView>
+      )}
       <TouchableOpacity
         className="absolute bottom-5 left-0 right-0 mx-5 bg-accent rounded-lg py-3.5 flex flex-row items-center justify-center z-50"
         onPress={router.back}
