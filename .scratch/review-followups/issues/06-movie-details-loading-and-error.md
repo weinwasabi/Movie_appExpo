@@ -1,6 +1,6 @@
 # Movie details screen shows no loading or error state
 
-Status: ready-for-agent
+Status: done
 
 ## Problem
 
@@ -13,3 +13,7 @@ Status: ready-for-agent
 - The poster `Image` renders only once `movie?.poster_path` exists.
 
 Source: found while moving `useFetch` to `status`.
+
+## Comments
+
+Implemented in 212465e (loading/error states, poster guard) and f26f09c (review fixes). Covered by `__tests__/movie-details.test.tsx`.
