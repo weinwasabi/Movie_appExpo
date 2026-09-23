@@ -14,13 +14,13 @@ export default function Index() {
 
   const {
     data: trendingMovies,
-    loading: trendingLoading,
+    status: trendingStatus,
     error: trendingError
   } = useFetch(getTrendingMovies);
 
   const { 
     data: movies,
-    loading: moviesLoading,
+    status: moviesStatus,
     error: moviesError
   } = useFetch(() => fetchMovies({
     query: ''
@@ -32,13 +32,13 @@ export default function Index() {
         <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false} contentContainerStyle={{minHeight: "100%", paddingBottom: 10}}>
             <Image source={ icons.logo } className="w-10 h-10 mt-20 mb-5 mx-auto" />
 
-            { moviesLoading || trendingLoading ? (
+            { moviesStatus === 'loading' || trendingStatus === 'loading' ? (
                 <ActivityIndicator 
                     size = "large"
                     color = "#0000ff"
                     className = "mt-10 self-center"
                 />
-            ) : moviesError || trendingError ? (
+            ) : moviesStatus === 'error' || trendingStatus === 'error' ? (
                 <Text> Error: {moviesError ?.message || trendingError?.message} </Text>
             ) : (
               <View className="flex-1 mt-5">

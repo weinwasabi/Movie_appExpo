@@ -1,31 +1,29 @@
 import { useEffect, useState } from "react"
 import { toError } from "@/services/toError"
 
+// starts at "loading" so the first render never looks like an empty result
+type Status = "loading" | "success" | "error";
+
+// Runs fetchFunction once on mount; later changes to fetchFunction are ignored.
 const useFetch = <T>(fetchFunction: () => Promise<T>) => {
     const [data, setData] = useState<T | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState< Error | null>(null);
-
-    const fetchData = async () =>{
-        try {
-            setLoading(true);
-            setError(null);
-
-            const result = await fetchFunction();
-
-            setData(result);
-        } catch (err) {
-            setError(toError(err));
-        }  finally {
-            setLoading(false);
-        }
-    }
+    const [status, setStatus] = useState<Status>("loading");
+    const [error, setError] = useState<Error | null>(null);
 
     useEffect(() => {
-        fetchData();
+        fetchFunction()
+            .then((result) => {
+                setData(result);
+                setStatus("success");
+            })
+            .catch((err) => {
+                setError(toError(err));
+                setStatus("error");
+            });
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- callers pass inline functions; fetch once
     }, []);
 
-    return { data, loading, error };
+    return { data, status, error };
 }
 
 export default useFetch;

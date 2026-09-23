@@ -39,7 +39,7 @@ const Search = () => {
                       <SearchBar
                           placeholder=" Search for a movie" 
                           value = {searchQuery}
-                          onChangeText={(text: string) => setSearchQuery(text)}
+                          onChangeText={setSearchQuery}
                       
                       />
                 </View>

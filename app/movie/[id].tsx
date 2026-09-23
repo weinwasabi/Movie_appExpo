@@ -24,7 +24,7 @@ const MovieInfo = ({ label, value }: MovieInfoProps) => (
 const MovieDetails = () => {
   const { id } = useLocalSearchParams();
 
-  const { data: movie, loading } = useFetch(() => fetchMovieDetails(id as string))
+  const { data: movie } = useFetch(() => fetchMovieDetails(id as string))
 
   return (
     <View className="bg-primary flex-1">
