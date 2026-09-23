@@ -43,7 +43,7 @@ const MovieDetails = () => {
       <ScrollView
         contentContainerStyle={{paddingBottom: 80}}>
           <View>
-              {movie?.poster_path && (
+              {!!movie?.poster_path && (
                 <Image
                   testID="movie-poster"
                   source={{ uri: `https://image.tmdb.org/t/p/w500${movie.poster_path}`}}

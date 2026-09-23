@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react-native";
-import MovieDetails from "@/app/movie/[id]";
+import MovieDetailsScreen from "@/app/movie/[id]";
 import { fetchMovieDetails } from "@/services/api";
 
 jest.mock("expo-router", () => ({
@@ -16,7 +16,7 @@ const mockFetchMovieDetails = fetchMovieDetails as jest.MockedFunction<typeof fe
 test("shows a spinner while the movie is loading", async () => {
     mockFetchMovieDetails.mockReturnValue(new Promise(() => {}));
 
-    await render(<MovieDetails />);
+    await render(<MovieDetailsScreen />);
 
     expect(screen.getByTestId("movie-details-loading")).toBeTruthy();
     expect(screen.queryByText("Overview")).toBeNull();
@@ -25,7 +25,7 @@ test("shows a spinner while the movie is loading", async () => {
 test("shows the error message and a way back when the movie fails to load", async () => {
     mockFetchMovieDetails.mockRejectedValue(new Error("Failed to fetch movie details"));
 
-    await render(<MovieDetails />);
+    await render(<MovieDetailsScreen />);
 
     expect(await screen.findByText("Failed to fetch movie details")).toBeTruthy();
     expect(screen.getByText("Go Back")).toBeTruthy();
@@ -52,7 +52,7 @@ const movieWith = (overrides: Partial<MovieDetails>) =>
 test("leaves out the poster when the movie has none", async () => {
     mockFetchMovieDetails.mockResolvedValue(movieWith({ poster_path: null }));
 
-    await render(<MovieDetails />);
+    await render(<MovieDetailsScreen />);
 
     expect(await screen.findByText("Fight Club")).toBeTruthy();
     expect(screen.queryByTestId("movie-poster")).toBeNull();
@@ -61,7 +61,7 @@ test("leaves out the poster when the movie has none", async () => {
 test("shows the poster once the movie has one", async () => {
     mockFetchMovieDetails.mockResolvedValue(movieWith({ poster_path: "/poster.jpg" }));
 
-    await render(<MovieDetails />);
+    await render(<MovieDetailsScreen />);
 
     expect((await screen.findByTestId("movie-poster")).props.source).toEqual({
         uri: "https://image.tmdb.org/t/p/w500/poster.jpg",
