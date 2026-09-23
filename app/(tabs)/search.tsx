@@ -6,6 +6,7 @@ import { movieSearchAdapters } from '@/services/movieSearchAdapters'
 import { icons } from '@/constants/icons'
 import SearchBar from '@/components/SearchBar'
 import { useState } from 'react'
+import colors from '@/constants/colors'
 
 const Search = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -45,7 +46,7 @@ const Search = () => {
                 </View>
 
                 {status === 'loading' && ( 
-                  <ActivityIndicator size="large" color="#0000ff" className="my-3"/>
+                  <ActivityIndicator size="large" color={colors.accent} className="my-3"/>
                 )}
 
                 {status === 'error' && (

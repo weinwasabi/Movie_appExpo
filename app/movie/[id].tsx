@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router'
 import useFetch from '@/services/useFetch';
 import { fetchMovieDetails } from '@/services/api';
 import { icons } from '@/constants/icons';
+import colors from '@/constants/colors';
 
 interface MovieInfoProps  {
     label: string;
@@ -32,7 +33,7 @@ const MovieDetails = () => {
         <ActivityIndicator
           testID="movie-details-loading"
           size="large"
-          color="#AB8BFF"
+          color={colors.accent}
           className="flex-1 self-center"
         />
       ) : status === 'error' ? (

@@ -8,6 +8,7 @@ import { fetchMovies } from "@/services/api";
 import MovieCard from "@/components/MovieCard";
 import { getTrendingMovies } from "@/services/appwrite";
 import TrendingCard from "@/components/TrendingCard";
+import colors from "@/constants/colors";
 
 export default function Index() {
   const router = useRouter();
@@ -35,7 +36,7 @@ export default function Index() {
             { moviesStatus === 'loading' || trendingStatus === 'loading' ? (
                 <ActivityIndicator 
                     size = "large"
-                    color = "#0000ff"
+                    color = {colors.accent}
                     className = "mt-10 self-center"
                 />
             ) : moviesStatus === 'error' || trendingStatus === 'error' ? (

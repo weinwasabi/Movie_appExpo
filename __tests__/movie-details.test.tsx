@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react-native";
 import MovieDetailsScreen from "@/app/movie/[id]";
 import { fetchMovieDetails } from "@/services/api";
+import colors from "@/constants/colors";
 
 jest.mock("expo-router", () => ({
     router: { back: jest.fn() },
@@ -18,7 +19,8 @@ test("shows a spinner while the movie is loading", async () => {
 
     await render(<MovieDetailsScreen />);
 
-    expect(screen.getByTestId("movie-details-loading")).toBeTruthy();
+    // the accent colour must be a prop: react-native-web ignores NativeWind's text-* mapping
+    expect(screen.getByTestId("movie-details-loading").props.color).toBe(colors.accent);
     expect(screen.queryByText("Overview")).toBeNull();
 });
 
