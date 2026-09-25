@@ -4,11 +4,15 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Sign-in screen with email, password, and a show-password toggle, reachable from anywhere and returning to where it was opened from
-- [ ] Wrong email or wrong password both show "Email or password is incorrect"
-- [ ] Other failures show a generic message
-- [ ] Sign-in links to sign-up ("Create account"), and sign-up's "Sign in instead" link reaches sign-in
-- [ ] Backing out of sign-in changes nothing
-- [ ] Screen tests cover success, the incorrect-credentials message, and backing out
+- [x] Sign-in screen with email, password, and a show-password toggle, reachable from anywhere and returning to where it was opened from
+- [x] Wrong email or wrong password both show "Email or password is incorrect"
+- [x] Other failures show a generic message
+- [x] Sign-in links to sign-up ("Create account"), and sign-up's "Sign in instead" link reaches sign-in
+- [x] Backing out of sign-in changes nothing
+- [x] Screen tests cover success, the incorrect-credentials message, and backing out
+
+## Comments
+
+**Built:** sign-in shares its fields, show-password toggle, inline problem, and Back button with sign-up (`components/AccountForm.tsx`). Each form `router.replace`s to the other, so backing out of whichever one is showing returns to where the first was opened from. If a session is already open on the device (one the app couldn't confirm at start, so it came up as a Guest), sign-in ends it and opens a new one, so it can't carry on as someone else. `user_invalid_credentials` is still unconfirmed against a live Appwrite (see ticket 01).

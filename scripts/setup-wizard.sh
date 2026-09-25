@@ -283,6 +283,7 @@ step "Home should list popular movies (TMDB works)."
 step "Search a title and tap a result. It should then appear under Trending on Home (Appwrite works)."
 step "On Profile, tap Create account and sign up. Profile should show your name and email (Auth works)."
 step "Close and reopen the app: Profile should still show you signed in."
+step "Sign out, then tap Sign in with the same email and password: Profile should show you again."
 note "Expo only reads .env at startup: restart it after changing values."
 pause "Press Enter to finish"
 

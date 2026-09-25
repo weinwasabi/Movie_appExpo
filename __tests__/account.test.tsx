@@ -4,6 +4,7 @@ import RootLayout from "@/app/_layout";
 import TabsLayout from "@/app/(tabs)/_layout";
 import ProfileScreen from "@/app/(tabs)/profile";
 import SignUpScreen from "@/app/sign-up";
+import SignInScreen from "@/app/sign-in";
 import { fakeBackend } from "@/test-support/fakeAppwrite";
 
 jest.mock("react-native-appwrite", () => require("@/test-support/fakeAppwrite").fakeAppwriteModule());
@@ -22,7 +23,7 @@ const openProfile = () =>
             "(tabs)/profile": ProfileScreen,
             "movie/[id]": stub("Movie screen"),
             "sign-up": SignUpScreen,
-            "sign-in": stub("Sign in screen"),
+            "sign-in": SignInScreen,
         },
         { initialUrl: "/profile" }
     );
@@ -121,7 +122,7 @@ test("an email that already has an account offers to sign in instead", async () 
 
     expect(await screen.findByText("An account with this email already exists")).toBeTruthy();
     await fireEvent.press(screen.getByRole("link", { name: "Sign in instead" }));
-    expect(await screen.findByText("Sign in screen")).toBeTruthy();
+    expect(await screen.findByRole("header", { name: "Sign in" })).toBeTruthy();
 });
 
 test("any other sign-up failure is shown on the form, keeping what was typed", async () => {
@@ -191,4 +192,95 @@ test("trying again after signing in worked but loading the Member failed carries
     await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
 
     expect(await screen.findByText("Ada Lovelace")).toBeTruthy();
+});
+
+const openSignIn = async () => {
+    await openProfile();
+    await fireEvent.press(await screen.findByRole("button", { name: "Sign in" }));
+    await screen.findByRole("header", { name: "Sign in" });
+};
+
+const fillSignIn = async ({ email, password }: { email: string; password: string }) => {
+    await fireEvent.changeText(screen.getByLabelText("Email"), email);
+    await fireEvent.changeText(screen.getByLabelText("Password"), password);
+    await fireEvent.press(screen.getByRole("button", { name: "Sign in" }));
+};
+
+test("a Guest with an account signs in from Profile and lands back on Profile as a Member", async () => {
+    fakeBackend.addMember({ name: "Grace Hopper", email: "grace@example.com", password: "cobolcobol" });
+    await openSignIn();
+
+    await fillSignIn({ email: "grace@example.com", password: "cobolcobol" });
+
+    expect(await screen.findByText("Grace Hopper")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeTruthy();
+    expect(fakeBackend.sessionAccountId).toBe(fakeBackend.accounts[0].$id);
+});
+
+test("a wrong password and an unknown email get the same message", async () => {
+    fakeBackend.addMember({ name: "Grace Hopper", email: "grace@example.com", password: "cobolcobol" });
+    await openSignIn();
+
+    await fillSignIn({ email: "grace@example.com", password: "wrongpassword" });
+    expect(await screen.findByText("Email or password is incorrect")).toBeTruthy();
+
+    await fillSignIn({ email: "nobody@example.com", password: "cobolcobol" });
+    expect(await screen.findByText("Email or password is incorrect")).toBeTruthy();
+    expect(fakeBackend.sessionAccountId).toBeNull();
+});
+
+test("any other sign-in failure is shown on the form, keeping what was typed", async () => {
+    fakeBackend.addMember({ name: "Grace Hopper", email: "grace@example.com", password: "cobolcobol" });
+    await openSignIn();
+    fakeBackend.failNext("createEmailPasswordSession", new Error("Network request failed"));
+
+    await fillSignIn({ email: "grace@example.com", password: "cobolcobol" });
+
+    expect(await screen.findByText("Network request failed")).toBeTruthy();
+    expect(screen.getByLabelText("Email").props.value).toBe("grace@example.com");
+});
+
+test("backing out of sign-in leaves Profile as it was", async () => {
+    fakeBackend.addMember({ name: "Grace Hopper", email: "grace@example.com", password: "cobolcobol" });
+    await openSignIn();
+    await fireEvent.changeText(screen.getByLabelText("Email"), "grace@example.com");
+
+    await fireEvent.press(screen.getByRole("button", { name: "Back" }));
+
+    expect(await screen.findByRole("button", { name: "Create account" })).toBeTruthy();
+    expect(screen.queryByLabelText("Email")).toBeNull();
+    expect(fakeBackend.sessionAccountId).toBeNull();
+});
+
+test("sign-in links to sign-up, and backing out of sign-up returns to Profile", async () => {
+    await openSignIn();
+
+    await fireEvent.press(screen.getByRole("link", { name: "Create account" }));
+    expect(await screen.findByRole("header", { name: "Create account" })).toBeTruthy();
+
+    await fireEvent.press(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("button", { name: "Sign in" })).toBeTruthy();
+    expect(screen.queryByLabelText("Email")).toBeNull();
+});
+
+test("the sign-in password can be shown and hidden", async () => {
+    await openSignIn();
+    const password = () => screen.getByLabelText("Password");
+    expect(password().props.secureTextEntry).toBe(true);
+
+    await fireEvent.press(screen.getByRole("button", { name: "Show password" }));
+    expect(password().props.secureTextEntry).toBe(false);
+});
+
+test("signing in replaces a session this device couldn't confirm at start", async () => {
+    // an old session is still on the device, but checking it failed, so the app started as a Guest
+    fakeBackend.addMember({ name: "Grace Hopper", email: "grace@example.com", password: "cobolcobol", signedIn: true });
+    fakeBackend.addMember({ name: "Ada Lovelace", email: "ada@example.com", password: "analytical" });
+    fakeBackend.failNext("get", new Error("Network request failed"));
+    await openSignIn();
+
+    await fillSignIn({ email: "ada@example.com", password: "analytical" });
+
+    expect(await screen.findByText("Ada Lovelace")).toBeTruthy();
+    expect(screen.queryByText("Grace Hopper")).toBeNull();
 });

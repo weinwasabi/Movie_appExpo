@@ -15,9 +15,11 @@ export type Session =
 
 export type SignUpDetails = { name: string; email: string; password: string };
 
+export type SignInDetails = { email: string; password: string };
+
 export const MIN_PASSWORD_LENGTH = 8;
 
-export type AccountFormReason = "email-taken" | "password-too-short" | "other";
+export type AccountFormReason = "email-taken" | "password-too-short" | "incorrect-credentials" | "other";
 
 // What went wrong with an Account form, in words the form can show as-is
 export class AccountFormError extends Error {
@@ -45,9 +47,17 @@ const currentMember = async (): Promise<Member | null> => {
     }
 };
 
+// the session Appwrite left open when this device couldn't confirm it at start, possibly
+// someone else's: end it so the new one belongs to whoever is signing in now
+const replaceStaleSession = async (details: SignInDetails) => {
+    await account.deleteSession({ sessionId: "current" });
+    await account.createEmailPasswordSession(details);
+};
+
 type SessionValue = {
     session: Session;
     signUp: (details: SignUpDetails) => Promise<void>;
+    signIn: (details: SignInDetails) => Promise<void>;
     signOut: () => Promise<void>;
 };
 
@@ -90,13 +100,32 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
         }
     }, []);
 
+    const signIn = useCallback(async (details: SignInDetails) => {
+        try {
+            try {
+                await account.createEmailPasswordSession(details);
+            } catch (err) {
+                if (!isAppwriteError(err, "user_session_already_exists")) throw err;
+                await replaceStaleSession(details);
+            }
+            setSession({ status: "member", member: await fetchMember() });
+        } catch (err) {
+            // one message for a wrong password and an unknown email, so the form doesn't
+            // reveal which emails have Accounts
+            if (isAppwriteError(err, "user_invalid_credentials")) {
+                throw new AccountFormError("Email or password is incorrect", "incorrect-credentials");
+            }
+            throw toAccountFormError(err);
+        }
+    }, []);
+
     const signOut = useCallback(async () => {
         // leave the device as a Guest even if Appwrite can't be reached to end the session
         setSession({ status: "guest" });
         await account.deleteSession({ sessionId: "current" }).catch(() => {});
     }, []);
 
-    const value = useMemo(() => ({ session, signUp, signOut }), [session, signUp, signOut]);
+    const value = useMemo(() => ({ session, signUp, signIn, signOut }), [session, signUp, signIn, signOut]);
 
     return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 };
