@@ -31,7 +31,7 @@
    npm install
    ```
 
-2. set up your API keys. copy `.env.example` to `.env` and fill it in. (**please don't commit your `.env`** 🙏)
+2. set up your API keys. copy `.env.example` to `.env` and fill it in.
    - **TMDB**: get the "API Read Access Token" (the long one that starts with `eyJ`) from your [TMDB settings](https://www.themoviedb.org/settings/api)
    - **Appwrite**: make a project, add Expo Go (`host.exp.exponent`) as an Android/iOS platform, turn on Email/Password auth, and make a database with two collections:
      - `metrics` (for trending): `searchTerm` string, `movie_id` int, `title` string, `count` int, `poster_url` url. give it a unique index on `searchTerm` and let the **Any** role Read/Create/Update
@@ -64,11 +64,3 @@ constants/    icons, images, etc.
 __tests__/    tests
 ```
 
-## 🙌 credits
-
-- movie data from [TMDB](https://www.themoviedb.org) (this product uses the TMDB API but is not endorsed or certified by TMDB)
-- inspired by a bunch of React Native tutorials on YouTube, thank you to all of them ❤️
-
----
-
-made with ☕ and a lot of late nights
