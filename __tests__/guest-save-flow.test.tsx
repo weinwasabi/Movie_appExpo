@@ -1,4 +1,3 @@
-import { Text } from "react-native";
 import { act, renderRouter, screen, fireEvent } from "expo-router/testing-library";
 import { router } from "expo-router";
 import RootLayout from "@/app/_layout";
@@ -10,6 +9,7 @@ import SignInScreen from "@/app/sign-in";
 import { fetchMovieDetails } from "@/services/api";
 import { saveMovie } from "@/services/savedMovies";
 import { fakeBackend } from "@/test-support/fakeAppwrite";
+import { dune, saveToggle, savedIds, settledSaveToggle, stub } from "@/test-support/movieScreens";
 
 jest.mock("react-native-appwrite", () => require("@/test-support/fakeAppwrite").fakeAppwriteModule());
 
@@ -18,24 +18,6 @@ jest.mock("@/services/api", () => ({
 }));
 
 const mockFetchMovieDetails = fetchMovieDetails as jest.MockedFunction<typeof fetchMovieDetails>;
-
-// only the fields the screen and a Saved Movie read; the rest of MovieDetails is irrelevant here
-const dune = {
-    id: 438631,
-    title: "Dune",
-    release_date: "2021-09-15",
-    runtime: 155,
-    vote_average: 7.8,
-    vote_count: 12000,
-    overview: "Paul Atreides...",
-    genres: [],
-    budget: 165_000_000,
-    revenue: 402_000_000,
-    production_companies: [],
-    poster_path: "/dune.jpg",
-} as unknown as MovieDetails;
-
-const stub = (label: string) => () => <Text>{label}</Text>;
 
 const openApp = (initialUrl: string) =>
     renderRouter(
@@ -58,10 +40,6 @@ const openDune = async () => {
     await screen.findByText("Dune");
 };
 
-const saveToggle = () => screen.getByRole("button", { name: "Save" });
-// the Save toggle once it's ready to tap: its saved state is known and no change is in flight
-const settledSaveToggle = () => screen.findByRole("button", { name: "Save", disabled: false, busy: false });
-const savedIds = () => fakeBackend.documents.map((document) => document.movie_id);
 const grace = { name: "Grace Hopper", email: "grace@example.com", password: "cobolcobol" };
 
 const tapSaveAsGuest = async () => {
@@ -192,12 +170,55 @@ test("a failed sign-in then backing out drops the save, even if the Guest signs 
     expect(fakeBackend.documents).toEqual([]);
 });
 
-test("a sign-in opened for a save with no movie to return to saves nothing, then or later", async () => {
+test("a sign-in opened for a save with nothing to go back to opens the movie, saved", async () => {
     fakeBackend.addMember(grace);
-    await openApp("/sign-in?save=438631");
+    await openApp("/sign-in?saveMovieId=438631");
     await screen.findByRole("header", { name: "Sign in" });
 
     await fillSignIn(grace);
+
+    expect(await screen.findByText("Dune")).toBeTruthy();
+    expect(await settledSaveToggle()).toBeSelected();
+    expect(savedIds()).toEqual([438631]);
+});
+
+test("backing out while sign-in is on its way stays on the movie and saves nothing", async () => {
+    fakeBackend.addMember(grace);
+    await openApp("/profile");
+    await screen.findByRole("button", { name: "Create account" });
+    await act(() => router.push("/movie/438631"));
+    await screen.findByText("Dune");
+    await tapSaveAsGuest();
+    const answer = fakeBackend.holdNext("createEmailPasswordSession");
+    await fillSignIn(grace);
+
+    await pressBack();
+    await screen.findByText("Dune");
+    answer();
+
+    // the sign-in still lands, but doesn't take the person anywhere: they're still on Dune
+    await fireEvent.press(await screen.findByText("Go Back"));
+    expect(await screen.findByText("Grace Hopper")).toBeTruthy();
+    await act(() => router.push("/movie/438631"));
+    expect(await settledSaveToggle()).not.toBeSelected();
+    expect(fakeBackend.documents).toEqual([]);
+});
+
+test("a save still waiting when its Member signs out isn't made for whoever signs in next", async () => {
+    fakeBackend.addMember(grace);
+    fakeBackend.addMember({ name: "Ada Lovelace", email: "ada@example.com", password: "analytical" });
+    // the movie can't be loaded after signing in, so nothing takes the save
+    mockFetchMovieDetails.mockRejectedValueOnce(new Error("Network request failed"));
+    await openApp("/sign-in?saveMovieId=438631");
+    await screen.findByRole("header", { name: "Sign in" });
+    await fillSignIn(grace);
+    expect(await screen.findByText("Network request failed")).toBeTruthy();
+
+    await act(() => router.push("/profile"));
+    await fireEvent.press(await screen.findByRole("button", { name: "Sign out" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Sign in" }));
+    await fillSignIn({ email: "ada@example.com", password: "analytical" });
+    expect(await screen.findByText("Ada Lovelace")).toBeTruthy();
     await act(() => router.push("/movie/438631"));
 
     expect(await settledSaveToggle()).not.toBeSelected();

@@ -10,6 +10,8 @@ type StoredDocument = { $id: string; $collectionId: string; $createdAt: string; 
 type AccountMethod = "create" | "createEmailPasswordSession" | "get" | "deleteSession";
 type DatabasesMethod = "createDocument" | "getDocument" | "deleteDocument" | "listDocuments";
 type Method = AccountMethod | DatabasesMethod;
+// the calls a test can hold mid-flight: every Databases call, and signing in
+type HoldableMethod = DatabasesMethod | "createEmailPasswordSession";
 
 const { AppwriteException } = jest.requireActual("react-native-appwrite");
 
@@ -20,8 +22,8 @@ export const fakeBackend = {
     documents: [] as StoredDocument[],
     // the next call to each named method rejects with its error instead of running
     failures: {} as Partial<Record<Method, Error>>,
-    // the next call to each named Databases method waits for its release before running
-    holds: {} as Partial<Record<DatabasesMethod, Promise<void>>>,
+    // the next call to each named method waits for its release before running
+    holds: {} as Partial<Record<HoldableMethod, Promise<void>>>,
     // Account.get waits on this before answering, so tests can observe the app before it knows
     currentAccountGate: null as Promise<void> | null,
 
@@ -38,8 +40,8 @@ export const fakeBackend = {
         this.failures[method] = error;
     },
 
-    // holds the next call to a Databases method until the returned function is called
-    holdNext(method: DatabasesMethod) {
+    // holds the next call to a method until the returned function is called
+    holdNext(method: HoldableMethod) {
         let release!: () => void;
         this.holds[method] = new Promise((resolve) => (release = resolve));
         return release;
@@ -77,6 +79,7 @@ class FakeAccount {
     }
 
     async createEmailPasswordSession({ email, password }: { email: string; password: string }) {
+        await waitIfHeld("createEmailPasswordSession");
         failIfScripted("createEmailPasswordSession");
         if (fakeBackend.sessionAccountId) {
             throw new AppwriteException("Creation of a session is prohibited when a session is active.", 401, "user_session_already_exists");
@@ -106,7 +109,7 @@ class FakeAccount {
     }
 }
 
-const waitIfHeld = async (method: DatabasesMethod) => {
+const waitIfHeld = async (method: HoldableMethod) => {
     const hold = fakeBackend.holds[method];
     delete fakeBackend.holds[method];
     if (hold) await hold;

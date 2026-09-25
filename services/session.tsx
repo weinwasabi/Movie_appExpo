@@ -2,6 +2,7 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, 
 import { Account, ID } from "react-native-appwrite";
 import { client, isAppwriteType } from "./appwriteClient";
 import { toError } from "./toError";
+import { dropPendingSave } from "./pendingSave";
 
 const account = new Account(client);
 
@@ -118,7 +119,9 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     const signOut = useCallback(async () => {
-        // leave the device as a Guest even if Appwrite can't be reached to end the session
+        // leave the device as a Guest even if Appwrite can't be reached to end the session, with
+        // no save left waiting to be made for whoever signs in next
+        dropPendingSave();
         setSession({ status: "guest" });
         await account.deleteSession({ sessionId: "current" }).catch(() => {});
     }, []);

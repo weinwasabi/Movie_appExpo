@@ -7,6 +7,7 @@ import SavedScreen from "@/app/(tabs)/save";
 import ProfileScreen from "@/app/(tabs)/profile";
 import { saveMovie } from "@/services/savedMovies";
 import { fakeBackend } from "@/test-support/fakeAppwrite";
+import { stub } from "@/test-support/movieScreens";
 
 jest.mock("react-native-appwrite", () => require("@/test-support/fakeAppwrite").fakeAppwriteModule());
 
@@ -17,8 +18,6 @@ const movie = (id: number, title: string, release_date: string, vote_average: nu
 const dune = movie(438631, "Dune", "2021-09-15", 7.8);
 const arrival = movie(329865, "Arrival", "2016-11-10", 7.6);
 
-// the Saved tab's neighbours only need to exist so the tabs and stack can mount
-const stub = (label: string) => () => <Text>{label}</Text>;
 const MovieStub = () => <Text>Movie {useLocalSearchParams().id}</Text>;
 
 const openSaved = () =>

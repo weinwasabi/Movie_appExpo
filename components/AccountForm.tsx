@@ -1,10 +1,10 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router, useLocalSearchParams } from "expo-router";
+import { router } from "expo-router";
 import colors from "@/constants/colors";
 import { AccountFormError } from "@/services/session";
-import { dropPendingSave, holdPendingSave } from "@/services/pendingSave";
+import { usePendingSave } from "@/services/pendingSave";
 
 // The pieces the sign-in and sign-up screens share, so the two forms look and behave alike
 
@@ -99,36 +99,48 @@ export const AccountFormScreen = ({ title, children }: { title: string; children
   </SafeAreaView>
 );
 
-// The movie a Guest tapped Save on before being sent here, if any, as the `save` route param
-type AccountFormParams = { save?: string };
-
-// Submit's busy flag and inline problem, shared by both forms. On success it goes back, and the
-// movie there finishes the Guest's save; with nothing to go back to, the save is dropped.
-// switchTo opens the other form in this one's place, passing the save on.
+// Submit's busy flag and inline problem, shared by both forms. On success it returns to where
+// the form was opened from: back, or, with nothing to go back to, the movie a Guest was saving
+// (or home). A submit that lands after the form was closed goes nowhere. switchTo opens the
+// other form in this one's place, passing on any save.
 export const useAccountForm = (submitAccountDetails: () => Promise<void>) => {
-  const { save } = useLocalSearchParams<AccountFormParams>();
+  const pendingSave = usePendingSave();
   const [submitting, setSubmitting] = useState(false);
   const [problem, setProblem] = useState<AccountFormError | null>(null);
+  const open = useRef(true);
 
-  const submit = async () => {
+  useEffect(() => {
+    open.current = true;
+    return () => {
+      open.current = false;
+    };
+  }, []);
+
+  const submitAndReturn = async () => {
     setSubmitting(true);
     setProblem(null);
-    // held before signing in, so it's waiting by the time the movie's Save toggle looks for it
-    if (save) holdPendingSave(save);
+    pendingSave.hold();
     try {
       await submitAccountDetails();
     } catch (err) {
-      dropPendingSave();
+      pendingSave.drop();
+      if (!open.current) return;
       setProblem(err as AccountFormError);
       setSubmitting(false);
       return;
     }
+    // closed while signing in: the save was dropped with the form, and the person has moved on
+    if (!open.current) return;
+    pendingSave.handOff();
     if (router.canGoBack()) router.back();
-    else dropPendingSave();
+    else router.replace(pendingSave.movieHref ?? "/");
   };
 
+  // the form's onPress, returning nothing: nothing should wait on the whole sign-in
+  const submit = () => void submitAndReturn();
+
   // replace, so backing out of either form returns to wherever the first was opened from
-  const switchTo = (pathname: "/sign-in" | "/sign-up") => router.replace({ pathname, params: save ? { save } : {} });
+  const switchTo = (pathname: "/sign-in" | "/sign-up") => router.replace({ pathname, params: pendingSave.params });
 
   return { submit, submitting, problem, switchTo };
 };

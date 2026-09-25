@@ -1,4 +1,3 @@
-import { Text } from "react-native";
 import { renderRouter, screen, fireEvent } from "expo-router/testing-library";
 import RootLayout from "@/app/_layout";
 import TabsLayout from "@/app/(tabs)/_layout";
@@ -6,11 +5,10 @@ import ProfileScreen from "@/app/(tabs)/profile";
 import SignUpScreen from "@/app/sign-up";
 import SignInScreen from "@/app/sign-in";
 import { fakeBackend } from "@/test-support/fakeAppwrite";
+import { stub } from "@/test-support/movieScreens";
 
 jest.mock("react-native-appwrite", () => require("@/test-support/fakeAppwrite").fakeAppwriteModule());
 
-// Profile's neighbours only need to exist so the tabs and stack can mount
-const stub = (label: string) => () => <Text>{label}</Text>;
 
 const openProfile = () =>
     renderRouter(

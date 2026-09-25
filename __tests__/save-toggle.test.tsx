@@ -1,4 +1,3 @@
-import { Text } from "react-native";
 import { renderRouter, screen, fireEvent } from "expo-router/testing-library";
 import RootLayout from "@/app/_layout";
 import TabsLayout from "@/app/(tabs)/_layout";
@@ -6,6 +5,7 @@ import MovieDetailsScreen from "@/app/movie/[id]";
 import { fetchMovieDetails } from "@/services/api";
 import { saveMovie } from "@/services/savedMovies";
 import { fakeBackend } from "@/test-support/fakeAppwrite";
+import { dune, saveToggle, savedIds, settledSaveToggle, stub } from "@/test-support/movieScreens";
 
 jest.mock("react-native-appwrite", () => require("@/test-support/fakeAppwrite").fakeAppwriteModule());
 
@@ -14,25 +14,6 @@ jest.mock("@/services/api", () => ({
 }));
 
 const mockFetchMovieDetails = fetchMovieDetails as jest.MockedFunction<typeof fetchMovieDetails>;
-
-// only the fields the screen and a Saved Movie read; the rest of MovieDetails is irrelevant here
-const dune = {
-    id: 438631,
-    title: "Dune",
-    release_date: "2021-09-15",
-    runtime: 155,
-    vote_average: 7.8,
-    vote_count: 12000,
-    overview: "Paul Atreides...",
-    genres: [],
-    budget: 165_000_000,
-    revenue: 402_000_000,
-    production_companies: [],
-    poster_path: "/dune.jpg",
-} as unknown as MovieDetails;
-
-// the movie's neighbours only need to exist so the tabs and stack can mount
-const stub = (label: string) => () => <Text>{label}</Text>;
 
 const openDune = async () => {
     await renderRouter(
@@ -52,10 +33,6 @@ const openDune = async () => {
     await screen.findByText("Dune");
 };
 
-const saveToggle = () => screen.getByRole("button", { name: "Save" });
-// the Save toggle once it's ready to tap: its saved state is known and no change is in flight
-const settledSaveToggle = () => screen.findByRole("button", { name: "Save", disabled: false, busy: false });
-const savedIds = () => fakeBackend.documents.map((document) => document.movie_id);
 const signedInMember = () =>
     fakeBackend.addMember({ name: "Ada Lovelace", email: "ada@example.com", password: "analytical", signedIn: true });
 
