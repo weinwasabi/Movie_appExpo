@@ -1,58 +1,76 @@
-# Welcome to your Expo app 👋
+# 🎬 Mobile Movie App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+hi! this is my movie app that I made with **React Native + Expo** 📱 it's basically a mini movie browser where you can find movies, see what's trending, and save the ones you want to watch later (so you stop forgetting what your friend told you to watch lol)
 
-## Get started
+<p align="center">
+  <img src="screenshots/home.png" alt="home screen of the app" width="300" />
+</p>
 
-1. Install dependencies
+## ✨ what it can do
+
+- 🔥 **Trending Movies**: shows the top movies people search the most in the app (ranked 1, 2, 3...)
+- 🆕 **Latest Movies**: a grid of popular movies from TMDB with rating, year, and poster
+- 🔍 **Search**: type a movie name and it finds it for you
+- 🎞️ **Movie details**: tap a movie to see the overview, rating, runtime, genres, etc.
+- 🔖 **Save movies**: you can save movies to your own Saved list (you need an account for this)
+- 👤 **Sign up / Sign in / Profile**: make an account, see how many movies you saved, and sign out
+- 👻 if you're not signed in and tap Save, it asks you to sign in first and then brings you back to the movie. took me a while to get that one right haha
+
+## 🛠️ built with
+
+- [Expo](https://expo.dev) + [Expo Router](https://docs.expo.dev/router/introduction) (file-based routing, super nice)
+- React Native + TypeScript
+- [NativeWind](https://www.nativewind.dev) (Tailwind but for React Native 💅)
+- [TMDB API](https://www.themoviedb.org) for all the movie data
+- [Appwrite](https://appwrite.io) for accounts, the saved list, and tracking trending searches
+- Jest for testing
+
+## 🚀 how to run it
+
+1. clone the repo and install stuff
 
    ```bash
    npm install
    ```
 
-2. Configure TMDB and Appwrite (writes `.env`)
+2. set up your API keys. copy `.env.example` to `.env` and fill it in. (**please don't commit your `.env`** 🙏)
+   - **TMDB**: get the "API Read Access Token" (the long one that starts with `eyJ`) from your [TMDB settings](https://www.themoviedb.org/settings/api)
+   - **Appwrite**: make a project, add Expo Go (`host.exp.exponent`) as an Android/iOS platform, turn on Email/Password auth, and make a database with two collections:
+     - `metrics` (for trending): `searchTerm` string, `movie_id` int, `title` string, `count` int, `poster_url` url. give it a unique index on `searchTerm` and let the **Any** role Read/Create/Update
+     - `saved_movies`: `member_id` string, `movie_id` int, `title` string, `poster_url` url, `release_year` int, `rating` float. turn on document security, let **Users** Create only, and add a unique index on `member_id` + `movie_id`
 
-   ```bash
-   ./scripts/setup-wizard.sh
-   ```
-
-   An interactive walkthrough: it opens each console, says what to click, and saves the values it captures. Re-running it keeps values you've already saved.
-
-3. Start the app
+3. start the app!
 
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+   then open it with Expo Go on your phone or an iOS/Android simulator.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## 🧪 tests and checks
 
 ```bash
-npm run reset-project
+npm test            # run the tests
+npx tsc --noEmit    # typescript check
+npx expo lint       # lint
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## 📂 folder stuff
 
-## Learn more
+```
+app/          screens (tabs, movie details, sign in/up)
+components/   reusable UI pieces
+services/     TMDB + Appwrite API calls
+interfaces/   types
+constants/    icons, images, etc.
+__tests__/    tests
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## 🙌 credits
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- movie data from [TMDB](https://www.themoviedb.org) (this product uses the TMDB API but is not endorsed or certified by TMDB)
+- inspired by a bunch of React Native tutorials on YouTube, thank you to all of them ❤️
 
-## Join the community
+---
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+made with ☕ and a lot of late nights

@@ -42,3 +42,15 @@ app-example
 /ios
 /android
 .env
+
+# AI agent files (skills, instructions, local issues/specs, memory)
+.agents/
+.claude/
+.qodo/
+.scratch/
+docs/agents/
+docs/adr/
+CLAUDE.md
+CONTEXT.md
+AGENTS.md
+skills-lock.json
