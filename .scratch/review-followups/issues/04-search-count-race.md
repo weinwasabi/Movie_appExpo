@@ -25,3 +25,5 @@ Source: code review, out-of-diff finding.
 1. Search a new term twice. You should get one row with id `term_…` and `count` 2.
 2. The collection grants the app's role **read**, **create** and **update**. Increment needs update, and the 409 fallback needs read.
 3. `count` is a numeric attribute with no max that rejects +1.
+
+**Decision update (2026-09-25): the unique `searchTerm` index is now part of the fix.** The code-only fix above still stands, and the app handles the index's 409 the same way it handles a term-derived id clash. The index is the backstop against duplicates the code can't stop: legacy random-id rows, or a client older than this fix. Existing collections got it after issue 05's merge. New setups get it from `scripts/setup-wizard.sh` stage 6. This updates the "no console change" line above: the fix doesn't *need* the index, but every environment should have one.
