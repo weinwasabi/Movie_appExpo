@@ -1,9 +1,10 @@
 import { ReactNode, useState } from "react";
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import colors from "@/constants/colors";
 import { AccountFormError } from "@/services/session";
+import { dropPendingSave, holdPendingSave } from "@/services/pendingSave";
 
 // The pieces the sign-in and sign-up screens share, so the two forms look and behave alike
 
@@ -98,22 +99,36 @@ export const AccountFormScreen = ({ title, children }: { title: string; children
   </SafeAreaView>
 );
 
-// submit's busy flag and inline problem, shared by both forms; on success, goes back
+// The movie a Guest tapped Save on before being sent here, if any, as the `save` route param
+type AccountFormParams = { save?: string };
+
+// Submit's busy flag and inline problem, shared by both forms. On success it goes back, and the
+// movie there finishes the Guest's save; with nothing to go back to, the save is dropped.
+// switchTo opens the other form in this one's place, passing the save on.
 export const useAccountForm = (submitAccountDetails: () => Promise<void>) => {
+  const { save } = useLocalSearchParams<AccountFormParams>();
   const [submitting, setSubmitting] = useState(false);
   const [problem, setProblem] = useState<AccountFormError | null>(null);
 
   const submit = async () => {
     setSubmitting(true);
     setProblem(null);
+    // held before signing in, so it's waiting by the time the movie's Save toggle looks for it
+    if (save) holdPendingSave(save);
     try {
       await submitAccountDetails();
-      router.back();
     } catch (err) {
+      dropPendingSave();
       setProblem(err as AccountFormError);
       setSubmitting(false);
+      return;
     }
+    if (router.canGoBack()) router.back();
+    else dropPendingSave();
   };
 
-  return { submit, submitting, problem };
+  // replace, so backing out of either form returns to wherever the first was opened from
+  const switchTo = (pathname: "/sign-in" | "/sign-up") => router.replace({ pathname, params: save ? { save } : {} });
+
+  return { submit, submitting, problem, switchTo };
 };

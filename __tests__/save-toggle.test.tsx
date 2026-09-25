@@ -137,13 +137,13 @@ test("a failed unsave turns the Save toggle back to saved and says so", async ()
     expect(savedIds()).toEqual([438631]);
 });
 
-test("a Guest sees the Save toggle outlined, and tapping it saves nothing yet", async () => {
+test("a Guest sees the Save toggle outlined, and tapping it opens sign-in without saving", async () => {
     await openDune();
     expect(await screen.findByRole("button", { name: "Save", selected: false })).toBeTruthy();
 
     await fireEvent.press(saveToggle());
 
-    expect(saveToggle()).not.toBeSelected();
+    expect(await screen.findByText("Sign in screen")).toBeTruthy();
     expect(fakeBackend.documents).toEqual([]);
 });
 
@@ -169,4 +169,17 @@ test("when Appwrite can't say whether the movie is saved, the Save toggle says s
 
     expect(await screen.findByText("Couldn't check whether this movie is saved.")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Save", disabled: true })).toBeTruthy();
+});
+
+test("a Member's Save toggle can't be tapped until the app knows they're signed in", async () => {
+    let answer!: () => void;
+    fakeBackend.currentAccountGate = new Promise((resolve) => (answer = resolve));
+    signedInMember();
+    await openDune();
+
+    await fireEvent.press(saveToggle());
+
+    expect(screen.queryByText("Sign in screen")).toBeNull();
+    answer();
+    expect(await settledSaveToggle()).not.toBeSelected();
 });

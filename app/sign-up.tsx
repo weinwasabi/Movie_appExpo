@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { router } from "expo-router";
 import { AccountFormScreen, EmailField, Field, FormLink, FormProblem, PasswordField, SubmitButton, useAccountForm } from "@/components/AccountForm";
 import { MIN_PASSWORD_LENGTH, useSession } from "@/services/session";
 
@@ -8,7 +7,7 @@ const SignUp = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { submit, submitting, problem } = useAccountForm(() =>
+  const { submit, submitting, problem, switchTo } = useAccountForm(() =>
     signUp({ name: name.trim(), email: email.trim(), password })
   );
 
@@ -26,7 +25,7 @@ const SignUp = () => {
 
       <FormProblem problem={problem}>
         {problem?.reason === "email-taken" && (
-          <FormLink label="Sign in instead" onPress={() => router.replace("/sign-in")} />
+          <FormLink label="Sign in instead" onPress={() => switchTo("/sign-in")} />
         )}
       </FormProblem>
 
