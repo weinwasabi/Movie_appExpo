@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity, Image } from 'react-native'
 import React from 'react'
 import { Link } from 'expo-router'
 import { icons } from '@/constants/icons';
+import { posterUrl } from '@/services/posterUrl';
 
 const MovieCard = ({ id, poster_path, title, vote_average, release_date}: Movie) => {
   return (
@@ -10,7 +11,7 @@ const MovieCard = ({ id, poster_path, title, vote_average, release_date}: Movie)
             <Image
                 source = {{
                     uri: poster_path 
-                    ?  `https://image.tmdb.org/t/p/w500${poster_path}` 
+                    ?  posterUrl(poster_path) 
                     : 'https://placehold.co/600x400/1a1a1a/ffffff.png'
                      
                 }} 

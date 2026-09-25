@@ -3,6 +3,7 @@ import React from 'react'
 import { Tabs } from 'expo-router'
 import { images } from '@/constants/images'
 import { icons } from '@/constants/icons'
+import colors from '@/constants/colors'
 
 const TabIcon = ({ focused, icon, title}: any) => {
     if(focused) {
@@ -11,7 +12,7 @@ const TabIcon = ({ focused, icon, title}: any) => {
     <ImageBackground 
     source={ images.highlight  }
     className="flex flex-row w-full flex-1 min-w-[112px] min-h-16 mt-4 justify-center items-center rounded-full overflow-hidden">
-    <Image source ={ icon } tintColor = "#151312" className="size-5" />
+    <Image source ={ icon } tintColor={ colors.secondary } className="size-5" />
     <Text className="text-secondary text-base font-semibold ml-2">{ title }</Text>
     </ImageBackground>
 
@@ -19,7 +20,7 @@ const TabIcon = ({ focused, icon, title}: any) => {
 
     return (
         <View className="size-full justify-center items-center mt-4 rounded-full">
-            <Image source={ icon } tintColor="#A8B5DB" className="size-5" />
+            <Image source={ icon } tintColor={ colors.light[200] } className="size-5" />
         </View>
     )
 }
@@ -36,7 +37,7 @@ const _Layout = () => {
                 alignItems: 'center'
             },
             tabBarStyle:{ 
-                backgroundColor: '#0f0D23',
+                backgroundColor: colors.dark[200],
                 borderRadius: 50,
                 marginHorizontal: 20,
                 marginBottom: 36,
@@ -44,7 +45,7 @@ const _Layout = () => {
                 position: 'absolute',
                 overflow: 'hidden',
                 borderWidth: 1,
-                borderColor: '#0f0D23'
+                borderColor: colors.dark[200]
 
             }
 

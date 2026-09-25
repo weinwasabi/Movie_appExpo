@@ -1,6 +1,7 @@
 // track users searches made
 
 import { AppwriteException, Client, Databases, Query } from "react-native-appwrite";
+import { posterUrl } from "./posterUrl";
 
 const DATABASE_ID = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
 const COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_COLLECTION_ID!;
@@ -45,33 +46,33 @@ export const updateSearchCount = async (query: string, movie: Movie) => {
     // errors propagate: the caller decides whether a failed count matters
     const existing = await findTermDocument(query);
     if (existing) {
-      await incrementCount(existing.$id);
-      return;
+        await incrementCount(existing.$id);
+        return;
     }
 
     try {
-      await database.createDocument({
-        databaseId: DATABASE_ID,
-        collectionId: COLLECTION_ID,
-        documentId: searchTermDocumentId(query),
-        data: {
-          searchTerm: query,
-          movie_id: movie.id,
-          title: movie.title,
-          count: 1,
-          poster_url: `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
-        },
-      });
+        await database.createDocument({
+            databaseId: DATABASE_ID,
+            collectionId: COLLECTION_ID,
+            documentId: searchTermDocumentId(query),
+            data: {
+                searchTerm: query,
+                movie_id: movie.id,
+                title: movie.title,
+                count: 1,
+                poster_url: posterUrl(movie.poster_path),
+            },
+        });
     } catch (err) {
-      if (!(err instanceof AppwriteException && err.code === 409)) throw err;
-      // a row for the term appeared since we looked (a concurrent first search, or a unique
-      // index clash with an older row): count this search on whichever row holds the term
-      const holder = await findTermDocument(query);
-      if (!holder) throw err;
-      await incrementCount(holder.$id);
+        if (!(err instanceof AppwriteException && err.code === 409)) throw err;
+        // a row for the term appeared since we looked (a concurrent first search, or a unique
+        // index clash with an older row): count this search on whichever row holds the term
+        const holder = await findTermDocument(query);
+        if (!holder) throw err;
+        await incrementCount(holder.$id);
     }
-  }
-  
+}
+
 export const getTrendingMovies =async (): Promise<TrendingMovie[] | undefined> => {
     try {
         const result = await database.listDocuments({

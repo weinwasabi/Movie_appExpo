@@ -5,6 +5,7 @@ import useFetch from '@/services/useFetch';
 import { fetchMovieDetails } from '@/services/api';
 import { icons } from '@/constants/icons';
 import colors from '@/constants/colors';
+import { posterUrl } from '@/services/posterUrl';
 
 interface MovieInfoProps  {
     label: string;
@@ -47,7 +48,7 @@ const MovieDetails = () => {
               {!!movie?.poster_path && (
                 <Image
                   testID="movie-poster"
-                  source={{ uri: `https://image.tmdb.org/t/p/w500${movie.poster_path}`}}
+                  source={{ uri: posterUrl(movie.poster_path) }}
                   className="w-full h-[550px]"
                   resizeMode="stretch"
                 />

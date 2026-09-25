@@ -8,6 +8,9 @@ type Props = { placeholder: string } & (
     | { value: string; onChangeText: (text: string) => void }
 );
 
+// Shared by both variants so the shortcut and the real input stay the same shape
+const barClassName = "flex-row items-center bg-dark-200 rounded-full px-5 py-4";
+
 const SearchBar = (props: Props) => {
   const icon = <Image source={ icons.search } className="size-5" resizeMode="contain" tintColor={colors.accent} />
 
@@ -19,7 +22,7 @@ const SearchBar = (props: Props) => {
           onPress={ props.onPress }
           accessibilityRole="button"
           accessibilityLabel={ props.placeholder }
-          className="flex-row items-center bg-dark-200 rounded-full px-5 py-4"
+          className={ barClassName }
       >
           { icon }
           <Text className="flex-1 ml-2 text-light-200">{ props.placeholder }</Text>
@@ -28,7 +31,7 @@ const SearchBar = (props: Props) => {
   }
 
   return (
-    <View className="flex-row items-center bg-dark-200 rounded-full px-5 py-4">
+    <View className={ barClassName }>
         { icon }
         <TextInput
                 placeholder={ props.placeholder }
