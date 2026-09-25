@@ -1,7 +1,5 @@
 # 🎬 Mobile Movie App
 
-hi! this is my movie app that I made with **React Native + Expo** 📱 it's basically a mini movie browser where you can find movies, see what's trending, and save the ones you want to watch later (so you stop forgetting what your friend told you to watch lol)
-
 <p align="center">
   <img src="screenshots/home.png" alt="home screen of the app" width="300" />
 </p>
