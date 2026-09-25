@@ -284,3 +284,14 @@ test("signing in replaces a session this device couldn't confirm at start", asyn
     expect(await screen.findByText("Ada Lovelace")).toBeTruthy();
     expect(screen.queryByText("Grace Hopper")).toBeNull();
 });
+
+test("creating an account replaces a session this device couldn't confirm at start", async () => {
+    fakeBackend.addMember({ name: "Grace Hopper", email: "grace@example.com", password: "cobolcobol", signedIn: true });
+    fakeBackend.failNext("get", new Error("Network request failed"));
+    await openSignUp();
+
+    await fillSignUp({ name: "Ada Lovelace", email: "ada@example.com", password: "analytical" });
+
+    expect(await screen.findByText("Ada Lovelace")).toBeTruthy();
+    expect(screen.queryByText("Grace Hopper")).toBeNull();
+});

@@ -2,6 +2,9 @@ import { render, screen } from "@testing-library/react-native";
 import MovieDetailsScreen from "@/app/movie/[id]";
 import { fetchMovieDetails } from "@/services/api";
 import colors from "@/constants/colors";
+import { SessionProvider } from "@/services/session";
+
+jest.mock("react-native-appwrite", () => require("@/test-support/fakeAppwrite").fakeAppwriteModule());
 
 jest.mock("expo-router", () => ({
     router: { back: jest.fn() },
@@ -14,10 +17,18 @@ jest.mock("@/services/api", () => ({
 
 const mockFetchMovieDetails = fetchMovieDetails as jest.MockedFunction<typeof fetchMovieDetails>;
 
+// the details header's bookmark reads who is signed in
+const renderMovieDetails = () =>
+    render(
+        <SessionProvider>
+            <MovieDetailsScreen />
+        </SessionProvider>
+    );
+
 test("shows a spinner while the movie is loading", async () => {
     mockFetchMovieDetails.mockReturnValue(new Promise(() => {}));
 
-    await render(<MovieDetailsScreen />);
+    await renderMovieDetails();
 
     // the accent colour must be a prop: react-native-web ignores NativeWind's text-* mapping
     expect(screen.getByTestId("movie-details-loading").props.color).toBe(colors.accent);
@@ -27,7 +38,7 @@ test("shows a spinner while the movie is loading", async () => {
 test("shows the error message and a way back when the movie fails to load", async () => {
     mockFetchMovieDetails.mockRejectedValue(new Error("Failed to fetch movie details"));
 
-    await render(<MovieDetailsScreen />);
+    await renderMovieDetails();
 
     expect(await screen.findByText("Failed to fetch movie details")).toBeTruthy();
     expect(screen.getByText("Go Back")).toBeTruthy();
@@ -54,7 +65,7 @@ const movieWith = (overrides: Partial<MovieDetails>) =>
 test("leaves out the poster when the movie has none", async () => {
     mockFetchMovieDetails.mockResolvedValue(movieWith({ poster_path: null }));
 
-    await render(<MovieDetailsScreen />);
+    await renderMovieDetails();
 
     expect(await screen.findByText("Fight Club")).toBeTruthy();
     expect(screen.queryByTestId("movie-poster")).toBeNull();
@@ -63,7 +74,7 @@ test("leaves out the poster when the movie has none", async () => {
 test("shows the poster once the movie has one", async () => {
     mockFetchMovieDetails.mockResolvedValue(movieWith({ poster_path: "/poster.jpg" }));
 
-    await render(<MovieDetailsScreen />);
+    await renderMovieDetails();
 
     expect((await screen.findByTestId("movie-poster")).props.source).toEqual({
         uri: "https://image.tmdb.org/t/p/w500/poster.jpg",

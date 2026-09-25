@@ -185,7 +185,7 @@ finish() {
 # ──────────────────────────────────────────────────────────────────────────
 
 
-TOTAL_STAGES=9
+TOTAL_STAGES=11
 
 # Run from the repo root so .env lands next to package.json.
 cd "$(dirname "$0")/.."
@@ -272,6 +272,34 @@ note "Email verification and password recovery aren't used yet, so no SMTP or re
 pause "Press Enter once Email/Password is enabled"
 
 # ── 9 ────────────────────────────────────────────────────────────────────
+stage "Appwrite: saved-movies collection + attributes"
+say "Each Member's Saved list lives in its own collection (services/savedMovies.ts)."
+step "In the same database, create a collection named 'saved_movies' (any name works)."
+step "Add these attributes:"
+say  "    member_id      String    size 36    Required"
+say  "    movie_id       Integer              Required"
+say  "    title          String    size 255   Required"
+say  "    poster_url     URL                  Optional"
+say  "    release_year   Integer              Optional"
+say  "    rating         Float                Required"
+note "Names are case-sensitive: they must match services/savedMovies.ts exactly."
+step "Copy the collection's ID from its settings/header."
+ask EXPO_PUBLIC_APPWRITE_SAVED_COLLECTION_ID "Saved-movies collection ID:"
+write_env EXPO_PUBLIC_APPWRITE_SAVED_COLLECTION_ID "$EXPO_PUBLIC_APPWRITE_SAVED_COLLECTION_ID"
+
+# ── 10 ───────────────────────────────────────────────────────────────────
+stage "Appwrite: saved-movies privacy + unique index"
+say "Each Saved Movie is readable only by the Member who saved it, and saved at most once."
+step "In the saved_movies collection, open Settings → Document security and turn it ON."
+step "Still in Settings → Permissions → Add role → Users (not Any)."
+step "Tick Create only (leave Read, Update, Delete unticked), then click Update."
+note "The app gives each Saved Movie read/update/delete for its own Member when it saves it."
+step "Open Indexes → Create index."
+step "Key: member_movie_unique   Type: Unique   Attributes: member_id (ASC), movie_id (ASC)."
+warn "Never add Read for Any or Users here: it would show every Member's Saved list to everyone."
+pause "Press Enter once document security, permissions, and the index are saved"
+
+# ── 11 ───────────────────────────────────────────────────────────────────
 stage "Smoke check"
 say "Your .env now holds every EXPO_PUBLIC_* value the app reads."
 if confirm "Run the test suite now (npm test)?"; then
@@ -284,6 +312,7 @@ step "Search a title and tap a result. It should then appear under Trending on H
 step "On Profile, tap Create account and sign up. Profile should show your name and email (Auth works)."
 step "Close and reopen the app: Profile should still show you signed in."
 step "Sign out, then tap Sign in with the same email and password: Profile should show you again."
+step "Open a movie and tap its bookmark. Go back and reopen it: the bookmark should still be filled (Saved Movies work)."
 note "Expo only reads .env at startup: restart it after changing values."
 pause "Press Enter to finish"
 

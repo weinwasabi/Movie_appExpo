@@ -6,6 +6,7 @@ import { fetchMovieDetails } from '@/services/api';
 import { icons } from '@/constants/icons';
 import colors from '@/constants/colors';
 import { posterUrl } from '@/services/posterUrl';
+import SaveToggle from '@/components/SaveToggle';
 
 interface MovieInfoProps  {
     label: string;
@@ -55,9 +56,12 @@ const MovieDetails = () => {
               )}
           </View>
           <View className="flex-col items-start justify-center mt-5 px-5">
-                <Text className="text-white font-bold text-xl">
-                    {movie?.title} 
-                </Text>
+                <View className="flex-row items-start justify-between w-full gap-x-3">
+                    <Text className="text-white font-bold text-xl shrink">
+                        {movie?.title}
+                    </Text>
+                    {movie && <SaveToggle movie={movie} />}
+                </View>
                 <View className="flex-row items-center gap-x-1 mt-2">
                     <Text className="text-light-200 text-sm">
                         {movie?.release_date?.split('-')[0]}

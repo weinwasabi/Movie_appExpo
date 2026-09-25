@@ -2,6 +2,7 @@
 
 import { AppwriteException, Databases, Query } from "react-native-appwrite";
 import { client } from "./appwriteClient";
+import { documentIdFor } from "./documentId";
 import { posterUrl } from "./posterUrl";
 
 const DATABASE_ID = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
@@ -9,16 +10,9 @@ const COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_COLLECTION_ID!;
 
 const database = new Databases(client);
 
-// Document id for a term's first row, derived from the term (FNV-1a 64-bit), so two
-// concurrent first searches collide on one id instead of creating duplicate rows.
+// Document id for a term's first row, so two concurrent first searches collide on one id.
 // Rows created before this keep their random ids; findTermDocument still finds them.
-const searchTermDocumentId = (term: string) => {
-    let hash = 0xcbf29ce484222325n;
-    for (const byte of new TextEncoder().encode(term)) {
-        hash = BigInt.asUintN(64, (hash ^ BigInt(byte)) * 0x100000001b3n);
-    }
-    return `term_${hash.toString(16).padStart(16, "0")}`;
-};
+const searchTermDocumentId = (term: string) => documentIdFor("term", term);
 
 const findTermDocument = async (term: string) => {
     const result = await database.listDocuments({

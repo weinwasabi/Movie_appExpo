@@ -47,8 +47,8 @@ const currentMember = async (): Promise<Member | null> => {
     }
 };
 
-// the session Appwrite left open when this device couldn't confirm it at start, possibly
-// someone else's: end it so the new one belongs to whoever is signing in now
+// a session left open on this device (one the app couldn't confirm at start, or from an earlier
+// attempt), possibly someone else's: end it so the new one belongs to whoever is signing in now
 const replaceStaleSession = async (details: SignInDetails) => {
     await account.deleteSession({ sessionId: "current" });
     await account.createEmailPasswordSession(details);
@@ -86,13 +86,18 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
                 if (!isAppwriteError(err, "user_already_exists")) throw err;
             }
             try {
-                await account.createEmailPasswordSession({ email, password });
+                try {
+                    await account.createEmailPasswordSession({ email, password });
+                } catch (err) {
+                    // a session is still open, from an earlier attempt or someone else
+                    if (!isAppwriteError(err, "user_session_already_exists")) throw err;
+                    await replaceStaleSession({ email, password });
+                }
             } catch (err) {
                 if (isAppwriteError(err, "user_invalid_credentials")) {
                     throw new AccountFormError("An account with this email already exists", "email-taken");
                 }
-                // a session from an earlier attempt is still open: carry on with it
-                if (!isAppwriteError(err, "user_session_already_exists")) throw err;
+                throw err;
             }
             setSession({ status: "member", member: await fetchMember() });
         } catch (err) {
