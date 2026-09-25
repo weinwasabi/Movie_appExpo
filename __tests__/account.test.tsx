@@ -9,7 +9,6 @@ import { stub } from "@/test-support/movieScreens";
 
 jest.mock("react-native-appwrite", () => require("@/test-support/fakeAppwrite").fakeAppwriteModule());
 
-
 const openProfile = () =>
     renderRouter(
         {

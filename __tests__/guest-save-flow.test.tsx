@@ -1,6 +1,6 @@
 import { act, renderRouter, screen, fireEvent } from "expo-router/testing-library";
 import { router } from "expo-router";
-import RootLayout from "@/app/_layout";
+import * as rootLayout from "@/app/_layout";
 import TabsLayout from "@/app/(tabs)/_layout";
 import ProfileScreen from "@/app/(tabs)/profile";
 import MovieDetailsScreen from "@/app/movie/[id]";
@@ -22,7 +22,8 @@ const mockFetchMovieDetails = fetchMovieDetails as jest.MockedFunction<typeof fe
 const openApp = (initialUrl: string) =>
     renderRouter(
         {
-            _layout: RootLayout,
+            // the whole module, so its unstable_settings apply as they do in the app
+            _layout: rootLayout,
             "(tabs)/_layout": TabsLayout,
             "(tabs)/index": stub("Home screen"),
             "(tabs)/search": stub("Search screen"),
@@ -37,6 +38,14 @@ const openApp = (initialUrl: string) =>
 
 const openDune = async () => {
     await openApp("/movie/438631");
+    await screen.findByText("Dune");
+};
+
+// Dune opened from Profile, so there's a screen under it to go back to
+const openDuneFromProfile = async () => {
+    await openApp("/profile");
+    await screen.findByRole("button", { name: "Create account" });
+    await act(() => router.push("/movie/438631"));
     await screen.findByText("Dune");
 };
 
@@ -59,6 +68,10 @@ const fillSignUp = async ({ name, email, password }: { name: string; email: stri
     await fireEvent.changeText(screen.getByLabelText("Password"), password);
     await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
 };
+
+// lets everything already on its way (fake Appwrite calls, the renders they cause) finish;
+// renderRouter fakes timers, and advancing them asynchronously yields to the real event loop
+const settle = () => act(() => jest.advanceTimersByTimeAsync(0));
 
 const pressBack = () => fireEvent.press(screen.getByRole("button", { name: "Back" }));
 
@@ -149,10 +162,7 @@ test("backing out of sign-up, reached from sign-in, returns to the movie with no
 
 test("a failed sign-in then backing out drops the save, even if the Guest signs in later from Profile", async () => {
     fakeBackend.addMember(grace);
-    await openApp("/profile");
-    await screen.findByRole("button", { name: "Create account" });
-    await act(() => router.push("/movie/438631"));
-    await screen.findByText("Dune");
+    await openDuneFromProfile();
     await tapSaveAsGuest();
     fakeBackend.failNext("createEmailPasswordSession", new Error("Network request failed"));
     await fillSignIn(grace);
@@ -180,21 +190,105 @@ test("a sign-in opened for a save with nothing to go back to opens the movie, sa
     expect(await screen.findByText("Dune")).toBeTruthy();
     expect(await settledSaveToggle()).toBeSelected();
     expect(savedIds()).toEqual([438631]);
+
+    await fireEvent.press(screen.getByText("Go Back"));
+    expect(await screen.findByText("Home screen")).toBeTruthy();
+});
+
+test("a sign-in opened for a save over another screen still lands on the movie, saved", async () => {
+    fakeBackend.addMember(grace);
+    await openApp("/");
+    await screen.findByText("Home screen");
+    await act(() => router.push("/sign-in?saveMovieId=438631"));
+    await screen.findByRole("header", { name: "Sign in" });
+
+    await fillSignIn(grace);
+
+    expect(await screen.findByText("Dune")).toBeTruthy();
+    expect(await settledSaveToggle()).toBeSelected();
+    expect(savedIds()).toEqual([438631]);
+});
+
+test("the other form can't be opened while signing in is on its way", async () => {
+    fakeBackend.addMember(grace);
+    await openDune();
+    await tapSaveAsGuest();
+    const releaseSignIn = fakeBackend.holdNext("createEmailPasswordSession");
+    await fillSignIn(grace);
+
+    await fireEvent.press(screen.getByRole("link", { name: "Create account" }));
+    expect(screen.getByRole("header", { name: "Sign in" })).toBeTruthy();
+    releaseSignIn();
+
+    expect(await settledSaveToggle()).toBeSelected();
+    expect(savedIds()).toEqual([438631]);
+});
+
+test("a sign-in abandoned by backing out can't undo the save of a later one that worked", async () => {
+    fakeBackend.addMember(grace);
+    await openDuneFromProfile();
+    await tapSaveAsGuest();
+    const releaseAbandonedSignIn = fakeBackend.holdNext("createEmailPasswordSession");
+    await fillSignIn(grace);
+    await pressBack();
+    await screen.findByText("Dune");
+
+    // try again; hold the movie's saved check so the abandoned sign-in fails before it answers
+    const releaseCheck = fakeBackend.holdNext("getDocument");
+    await tapSaveAsGuest();
+    await fillSignIn(grace);
+    await screen.findByText("Dune");
+    fakeBackend.failNext("createEmailPasswordSession", new Error("Network request failed"));
+    releaseAbandonedSignIn();
+    await settle();
+    releaseCheck();
+
+    expect(await settledSaveToggle()).toBeSelected();
+    expect(savedIds()).toEqual([438631]);
+});
+
+test("a sign-in abandoned by backing out that lands later doesn't take a newer sign-in's save", async () => {
+    fakeBackend.addMember(grace);
+    const ada = fakeBackend.addMember({ name: "Ada Lovelace", email: "ada@example.com", password: "analytical" });
+    await openDuneFromProfile();
+    await tapSaveAsGuest();
+    const releaseAbandonedSignIn = fakeBackend.holdNext("createEmailPasswordSession");
+    await fillSignIn(grace);
+    await pressBack();
+    await screen.findByText("Dune");
+
+    // someone else signs in to save it; Grace's abandoned sign-in lands while theirs is on its way
+    await tapSaveAsGuest();
+    const releaseSignIn = fakeBackend.holdNext("createEmailPasswordSession");
+    await fillSignIn(ada);
+    releaseAbandonedSignIn();
+    await settle();
+    releaseSignIn();
+
+    expect(await settledSaveToggle()).toBeSelected();
+    expect(fakeBackend.documents).toEqual([expect.objectContaining({ movie_id: 438631, member_id: ada.$id })]);
+});
+
+test("a sign-in opened by a deep link without a save goes home", async () => {
+    fakeBackend.addMember(grace);
+    await openApp("/sign-in");
+    await screen.findByRole("header", { name: "Sign in" });
+
+    await fillSignIn(grace);
+
+    expect(await screen.findByText("Home screen")).toBeTruthy();
 });
 
 test("backing out while sign-in is on its way stays on the movie and saves nothing", async () => {
     fakeBackend.addMember(grace);
-    await openApp("/profile");
-    await screen.findByRole("button", { name: "Create account" });
-    await act(() => router.push("/movie/438631"));
-    await screen.findByText("Dune");
+    await openDuneFromProfile();
     await tapSaveAsGuest();
-    const answer = fakeBackend.holdNext("createEmailPasswordSession");
+    const releaseSignIn = fakeBackend.holdNext("createEmailPasswordSession");
     await fillSignIn(grace);
 
     await pressBack();
     await screen.findByText("Dune");
-    answer();
+    releaseSignIn();
 
     // the sign-in still lands, but doesn't take the person anywhere: they're still on Dune
     await fireEvent.press(await screen.findByText("Go Back"));

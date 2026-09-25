@@ -13,13 +13,14 @@ const SaveToggleButton = ({ session, movie }: SaveToggleButtonProps) => {
   const memberId = session.status === "member" ? session.member.id : null;
   // null until Appwrite has said whether this Member saved the movie; a Guest's stays null
   const [saved, setSaved] = useState<boolean | null>(null);
-  const [pending, setPending] = useState(false);
+  // a save or unsave on its way to Appwrite
+  const [changing, setChanging] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
   // flips the toggle at once, then saves or unsaves in Appwrite, flipping back if it refuses
   const setSavedInAppwrite = async (member: string, saving: boolean) => {
     setSaved(saving);
-    setPending(true);
+    setChanging(true);
     setProblem(null);
     try {
       await (saving ? saveMovie(member, movie) : unsaveMovie(member, movie.id));
@@ -27,7 +28,7 @@ const SaveToggleButton = ({ session, movie }: SaveToggleButtonProps) => {
       setSaved(!saving);
       setProblem(saving ? "Couldn't save this movie. Try again." : "Couldn't remove this movie. Try again.");
     } finally {
-      setPending(false);
+      setChanging(false);
     }
   };
 
@@ -67,20 +68,20 @@ const SaveToggleButton = ({ session, movie }: SaveToggleButtonProps) => {
       return;
     }
     // one change at a time, so a save and an unsave can't reach Appwrite out of order
-    if (!memberId || saved === null || pending) return;
+    if (!memberId || saved === null || changing) return;
     void setSavedInAppwrite(memberId, !saved);
   };
 
   const filled = saved === true;
   // untappable until the app knows who is signed in and, for a Member, whether the movie is saved
-  const waiting = session.status === "loading" || (session.status === "member" && saved === null);
+  const waiting = session.status !== "guest" && saved === null;
 
   return (
     <View className="items-end gap-1 shrink-0">
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Save"
-        accessibilityState={{ selected: filled, disabled: waiting, busy: pending }}
+        accessibilityState={{ selected: filled, disabled: waiting, busy: changing }}
         disabled={waiting}
         onPress={toggle}
         hitSlop={8}
@@ -102,9 +103,9 @@ const SaveToggleButton = ({ session, movie }: SaveToggleButtonProps) => {
 // opens sign-in, and the movie is saved once they come back signed in.
 const SaveToggle = ({ movie }: { movie: MovieDetails }) => {
   const { session } = useSession();
-  const who = session.status === "member" ? session.member.id : session.status;
-  // keyed, so signing in, out, or as someone else starts from a fresh, unknown saved state
-  return <SaveToggleButton key={`${who}:${movie.id}`} session={session} movie={movie} />;
+  // signing in, out, or as someone else remounts the toggle, from a fresh, unknown saved state
+  const remountKey = `${session.status === "member" ? session.member.id : session.status}:${movie.id}`;
+  return <SaveToggleButton key={remountKey} session={session} movie={movie} />;
 };
 
 export default SaveToggle;

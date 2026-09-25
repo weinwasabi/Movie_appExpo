@@ -22,7 +22,7 @@ const SignIn = () => {
 
       <SubmitButton label="Sign in" submitting={submitting} onPress={submit} />
 
-      <FormLink label="Create account" onPress={() => switchTo("/sign-up")} />
+      <FormLink label="Create account" disabled={submitting} onPress={() => switchTo("/sign-up")} />
     </AccountFormScreen>
   );
 };

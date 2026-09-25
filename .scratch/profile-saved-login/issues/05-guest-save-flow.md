@@ -27,3 +27,21 @@
 - **Tidying.** The pending save's whole lifecycle lives in `services/pendingSave.ts`: the `saveMovieId` route param, and `usePendingSave` for the forms' hold, drop, hand-off and close. The movie id is a number throughout. `SaveToggle` takes the `Session` instead of a `string | null | undefined` member id. The form's `onPress` no longer returns the sign-in promise.
 - **Tests.** `test-support/movieScreens.tsx` holds the shared `dune`, `stub` and Save toggle queries. `fakeBackend.holdNext` can now hold `createEmailPasswordSession`. Each fix was checked by removing it and seeing its test fail.
 - **Kept on purpose.** The Save toggle stays untappable while the session loads. Before this ticket it was already untappable while its state was unknown, and without this a signed-in Member would be sent to sign-in.
+
+**Third review follow-ups (2026-09-25).** These supersede the return and hand-off details above:
+- **Returning.** On success a form carrying a save calls `router.dismissTo` for the movie. That pops back to the movie if it's under the form, and puts it in the form's place if it isn't. Without a save the form goes back. The root layout's `unstable_settings.initialRouteName = "(tabs)"` keeps the tabs under any deep-linked screen, so the movie's Go Back and a no-save sign-in both have somewhere to go.
+- **Hand-off gates taking.** The Save toggle takes a pending save only after its form's successful submit has handed it off. A held save is left for its own form. A sign-in abandoned earlier that lands for someone else therefore can't take a newer form's save.
+- **Closed forms keep out.** A form that has closed does nothing when its submit settles: no navigation, and it doesn't drop the save, which may now belong to a later form. Its own save was already dropped when it closed.
+- **One submit at a time.** An `inFlight` ref blocks a second submit before the re-render disables the button. The switch-form links are disabled, and `switchTo` is ignored, while a submit is running. The double-tap guard has no test, because React Native Testing Library won't press a disabled button and can't land a second tap before the re-render.
+- **Tests.** Seven new cases, in `guest-save-flow.test.tsx`, cover:
+  - deep links with and without a save, and with and without a screen underneath;
+  - switching forms mid-submit;
+  - a late failure from an abandoned sign-in;
+  - a late success from an abandoned sign-in.
+
+  `settle()` waits for in-flight fake calls with `jest.advanceTimersByTimeAsync(0)`, because `renderRouter` fakes timers. Each fix was checked by removing it and seeing its test fail.
+- **Left as is.** Two judgement calls from the Standards review:
+  - The screens pass `disabled={submitting}` to their switch link rather than getting it from the hook. It is explicit and one line per form.
+  - The toggle's remount key repeats the member-id lookup.
+
+  A signed-in Member deep-linked to sign-in still gets the generic error. Nothing in the app sends a Member there.

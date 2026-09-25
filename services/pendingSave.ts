@@ -3,21 +3,24 @@
 //
 // It exists only while it can still be wanted: a form holds it while a submit is on its way,
 // drops it if the submit fails or the form is closed first, and otherwise hands it to the movie,
-// whose Save toggle takes it. Signing out drops it too, so it's never made for someone else.
+// whose Save toggle takes it. Only a handed-off save can be taken, so a sign-in that lands for
+// someone else meanwhile (one abandoned earlier) can't take it. Signing out drops it too.
 
 import { useEffect, useRef } from "react";
 import { Href, useLocalSearchParams } from "expo-router";
 
-let pendingMovieId: number | null = null;
+let pending: { movieId: number; handedOff: boolean } | null = null;
 
 export const dropPendingSave = () => {
-    pendingMovieId = null;
+    pending = null;
 };
 
-// true, once, if a save for this movie is waiting; any other movie's pending save is dropped
+// true, once, if a save for this movie has been handed off; a handed-off save for any other
+// movie is dropped, and one still held by its form is left for that form's own sign-in
 export const takePendingSave = (movieId: number) => {
-    const wanted = pendingMovieId === movieId;
-    pendingMovieId = null;
+    if (!pending?.handedOff) return false;
+    const wanted = pending.movieId === movieId;
+    pending = null;
     return wanted;
 };
 
@@ -49,11 +52,12 @@ export const usePendingSave = () => {
 
     return {
         hold: () => {
-            if (movieId !== null) pendingMovieId = movieId;
+            if (movieId !== null) pending = { movieId, handedOff: false };
         },
         drop: dropPendingSave,
         handOff: () => {
             handedOff.current = true;
+            if (pending) pending.handedOff = true;
         },
         movieHref: movieId === null ? null : ({ pathname: "/movie/[id]", params: { id: String(movieId) } } satisfies Href),
         params: movieId === null ? {} : pendingSaveParams(movieId),

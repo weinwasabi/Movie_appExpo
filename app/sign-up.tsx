@@ -25,7 +25,7 @@ const SignUp = () => {
 
       <FormProblem problem={problem}>
         {problem?.reason === "email-taken" && (
-          <FormLink label="Sign in instead" onPress={() => switchTo("/sign-in")} />
+          <FormLink label="Sign in instead" disabled={submitting} onPress={() => switchTo("/sign-in")} />
         )}
       </FormProblem>
 
