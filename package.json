@@ -53,7 +53,10 @@
   },
   "private": true,
   "jest": {
-    "preset": "jest-expo"
+    "preset": "jest-expo",
+    "moduleNameMapper": {
+      "\\.css$": "<rootDir>/test-support/emptyModule.js"
+    }
   },
   "overrides": {
     "expo-file-system": "~57.0.7"

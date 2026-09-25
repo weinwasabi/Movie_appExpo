@@ -185,7 +185,7 @@ finish() {
 # ──────────────────────────────────────────────────────────────────────────
 
 
-TOTAL_STAGES=8
+TOTAL_STAGES=9
 
 # Run from the repo root so .env lands next to package.json.
 cd "$(dirname "$0")/.."
@@ -264,6 +264,14 @@ note "Update is required: search counts are incremented on existing rows."
 pause "Press Enter once permissions are saved"
 
 # ── 8 ────────────────────────────────────────────────────────────────────
+stage "Appwrite: email/password sign-in"
+say "Members sign up and sign in with an email and password (services/session.tsx)."
+step "In the project sidebar, open Auth → Settings (older consoles: Auth → Security)."
+step "Under Auth methods, make sure Email/Password is enabled."
+note "Email verification and password recovery aren't used yet, so no SMTP or redirect setup is needed."
+pause "Press Enter once Email/Password is enabled"
+
+# ── 9 ────────────────────────────────────────────────────────────────────
 stage "Smoke check"
 say "Your .env now holds every EXPO_PUBLIC_* value the app reads."
 if confirm "Run the test suite now (npm test)?"; then
@@ -273,6 +281,8 @@ fi
 say "Start the app with:  npx expo start"
 step "Home should list popular movies (TMDB works)."
 step "Search a title and tap a result. It should then appear under Trending on Home (Appwrite works)."
+step "On Profile, tap Create account and sign up. Profile should show your name and email (Auth works)."
+step "Close and reopen the app: Profile should still show you signed in."
 note "Expo only reads .env at startup: restart it after changing values."
 pause "Press Enter to finish"
 

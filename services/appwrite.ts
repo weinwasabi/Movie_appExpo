@@ -1,14 +1,11 @@
 // track users searches made
 
-import { AppwriteException, Client, Databases, Query } from "react-native-appwrite";
+import { AppwriteException, Databases, Query } from "react-native-appwrite";
+import { client } from "./appwriteClient";
 import { posterUrl } from "./posterUrl";
 
 const DATABASE_ID = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
 const COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_COLLECTION_ID!;
-
-const client = new Client()
-    .setEndpoint(process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT!)
-    .setProject(process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID!)
 
 const database = new Databases(client);
 
