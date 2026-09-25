@@ -312,7 +312,7 @@ step "Search a title and tap a result. It should then appear under Trending on H
 step "On Profile, tap Create account and sign up. Profile should show your name and email (Auth works)."
 step "Close and reopen the app: Profile should still show you signed in."
 step "Sign out, then tap Sign in with the same email and password: Profile should show you again."
-step "Open a movie and tap its bookmark. Go back and reopen it: the bookmark should still be filled (Saved Movies work)."
+step "Open a movie and tap Save (the bookmark icon). Go back and reopen it: the icon should still be filled (Saved Movies work)."
 note "Expo only reads .env at startup: restart it after changing values."
 pause "Press Enter to finish"
 

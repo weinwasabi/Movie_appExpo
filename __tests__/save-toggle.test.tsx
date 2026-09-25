@@ -52,9 +52,9 @@ const openDune = async () => {
     await screen.findByText("Dune");
 };
 
-const bookmark = () => screen.getByRole("button", { name: "Save" });
-// the bookmark once it's ready to tap: its saved state is known and no change is in flight
-const settledBookmark = () => screen.findByRole("button", { name: "Save", disabled: false, busy: false });
+const saveToggle = () => screen.getByRole("button", { name: "Save" });
+// the Save toggle once it's ready to tap: its saved state is known and no change is in flight
+const settledSaveToggle = () => screen.findByRole("button", { name: "Save", disabled: false, busy: false });
 const savedIds = () => fakeBackend.documents.map((document) => document.movie_id);
 const signedInMember = () =>
     fakeBackend.addMember({ name: "Ada Lovelace", email: "ada@example.com", password: "analytical", signedIn: true });
@@ -65,11 +65,11 @@ afterEach(() => fakeBackend.reset());
 test("a Member saves the movie they're looking at", async () => {
     signedInMember();
     await openDune();
-    expect(await settledBookmark()).not.toBeSelected();
+    expect(await settledSaveToggle()).not.toBeSelected();
 
-    await fireEvent.press(bookmark());
+    await fireEvent.press(saveToggle());
 
-    expect(await settledBookmark()).toBeSelected();
+    expect(await settledSaveToggle()).toBeSelected();
     expect(savedIds()).toEqual([438631]);
 });
 
@@ -79,89 +79,89 @@ test("a movie saved earlier, on this device or another, shows as saved when open
 
     await openDune();
 
-    expect(await settledBookmark()).toBeSelected();
+    expect(await settledSaveToggle()).toBeSelected();
 });
 
-test("tapping a saved movie's bookmark unsaves it", async () => {
+test("tapping a saved movie's Save toggle unsaves it", async () => {
     signedInMember();
     await openDune();
-    await fireEvent.press(await settledBookmark());
-    await settledBookmark();
+    await fireEvent.press(await settledSaveToggle());
+    await settledSaveToggle();
 
-    await fireEvent.press(bookmark());
+    await fireEvent.press(saveToggle());
 
-    expect(await settledBookmark()).not.toBeSelected();
+    expect(await settledSaveToggle()).not.toBeSelected();
     expect(savedIds()).toEqual([]);
 });
 
-test("the bookmark fills the moment it's tapped, before Appwrite answers", async () => {
+test("the Save toggle fills the moment it's tapped, before Appwrite answers", async () => {
     signedInMember();
     await openDune();
-    await settledBookmark();
+    await settledSaveToggle();
     const answer = fakeBackend.holdNext("createDocument");
 
-    await fireEvent.press(bookmark());
+    await fireEvent.press(saveToggle());
 
-    expect(bookmark()).toBeSelected();
+    expect(saveToggle()).toBeSelected();
     expect(savedIds()).toEqual([]);
 
     answer();
-    expect(await settledBookmark()).toBeSelected();
+    expect(await settledSaveToggle()).toBeSelected();
     expect(savedIds()).toEqual([438631]);
 });
 
-test("a failed save turns the bookmark back and says so", async () => {
+test("a failed save turns the Save toggle back and says so", async () => {
     signedInMember();
     await openDune();
-    await settledBookmark();
+    await settledSaveToggle();
     fakeBackend.failNext("createDocument", new Error("Network request failed"));
 
-    await fireEvent.press(bookmark());
+    await fireEvent.press(saveToggle());
 
     expect(await screen.findByText("Couldn't save this movie. Try again.")).toBeTruthy();
-    expect(await settledBookmark()).not.toBeSelected();
+    expect(await settledSaveToggle()).not.toBeSelected();
     expect(savedIds()).toEqual([]);
 });
 
-test("a failed unsave turns the bookmark back to saved and says so", async () => {
+test("a failed unsave turns the Save toggle back to saved and says so", async () => {
     signedInMember();
     await openDune();
-    await fireEvent.press(await settledBookmark());
-    await settledBookmark();
+    await fireEvent.press(await settledSaveToggle());
+    await settledSaveToggle();
     fakeBackend.failNext("deleteDocument", new Error("Network request failed"));
 
-    await fireEvent.press(bookmark());
+    await fireEvent.press(saveToggle());
 
     expect(await screen.findByText("Couldn't remove this movie. Try again.")).toBeTruthy();
-    expect(await settledBookmark()).toBeSelected();
+    expect(await settledSaveToggle()).toBeSelected();
     expect(savedIds()).toEqual([438631]);
 });
 
-test("a Guest sees the bookmark outlined, and tapping it saves nothing yet", async () => {
+test("a Guest sees the Save toggle outlined, and tapping it saves nothing yet", async () => {
     await openDune();
     expect(await screen.findByRole("button", { name: "Save", selected: false })).toBeTruthy();
 
-    await fireEvent.press(bookmark());
+    await fireEvent.press(saveToggle());
 
-    expect(bookmark()).not.toBeSelected();
+    expect(saveToggle()).not.toBeSelected();
     expect(fakeBackend.documents).toEqual([]);
 });
 
 test("a double tap while the save is on its way leaves one Saved Movie, still saved", async () => {
     signedInMember();
     await openDune();
-    await settledBookmark();
+    await settledSaveToggle();
     const answer = fakeBackend.holdNext("createDocument");
 
-    await fireEvent.press(bookmark());
-    await fireEvent.press(bookmark());
+    await fireEvent.press(saveToggle());
+    await fireEvent.press(saveToggle());
     answer();
 
-    expect(await settledBookmark()).toBeSelected();
+    expect(await settledSaveToggle()).toBeSelected();
     expect(savedIds()).toEqual([438631]);
 });
 
-test("when Appwrite can't say whether the movie is saved, the bookmark says so and can't be tapped", async () => {
+test("when Appwrite can't say whether the movie is saved, the Save toggle says so and can't be tapped", async () => {
     signedInMember();
     fakeBackend.failNext("getDocument", new Error("Network request failed"));
 

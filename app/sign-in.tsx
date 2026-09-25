@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { router } from "expo-router";
-import { AccountFormScreen, Field, FormLink, FormProblem, PasswordField, SubmitButton, useAccountForm } from "@/components/AccountForm";
+import { AccountFormScreen, EmailField, FormLink, FormProblem, PasswordField, SubmitButton, useAccountForm } from "@/components/AccountForm";
 import { useSession } from "@/services/session";
 
 const SignIn = () => {
@@ -11,15 +11,7 @@ const SignIn = () => {
 
   return (
     <AccountFormScreen title="Sign in">
-      <Field
-        label="Email"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        autoComplete="email"
-        keyboardType="email-address"
-        textContentType="emailAddress"
-      />
+      <EmailField value={email} onChangeText={setEmail} />
       <PasswordField
         value={password}
         onChangeText={setPassword}

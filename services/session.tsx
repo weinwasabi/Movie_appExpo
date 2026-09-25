@@ -1,6 +1,6 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { Account, AppwriteException, ID } from "react-native-appwrite";
-import { client } from "./appwriteClient";
+import { Account, ID } from "react-native-appwrite";
+import { client, isAppwriteType } from "./appwriteClient";
 import { toError } from "./toError";
 
 const account = new Account(client);
@@ -31,8 +31,6 @@ export class AccountFormError extends Error {
 const toAccountFormError = (err: unknown): AccountFormError =>
     err instanceof AccountFormError ? err : new AccountFormError(toError(err).message, "other");
 
-const isAppwriteError = (err: unknown, type: string) => err instanceof AppwriteException && err.type === type;
-
 const fetchMember = async (): Promise<Member> => {
     const { $id, name, email } = await account.get();
     return { id: $id, name, email };
@@ -47,11 +45,17 @@ const currentMember = async (): Promise<Member | null> => {
     }
 };
 
-// a session left open on this device (one the app couldn't confirm at start, or from an earlier
-// attempt), possibly someone else's: end it so the new one belongs to whoever is signing in now
-const replaceStaleSession = async (details: SignInDetails) => {
-    await account.deleteSession({ sessionId: "current" });
-    await account.createEmailPasswordSession(details);
+// Signs this device in. A session left open on it (one the app couldn't confirm at start, or
+// from an earlier attempt) may be someone else's: end it so the new one belongs to whoever
+// is signing in now.
+const openSession = async (details: SignInDetails) => {
+    try {
+        await account.createEmailPasswordSession(details);
+    } catch (err) {
+        if (!isAppwriteType(err, "user_session_already_exists")) throw err;
+        await account.deleteSession({ sessionId: "current" });
+        await account.createEmailPasswordSession(details);
+    }
 };
 
 type SessionValue = {
@@ -83,18 +87,12 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
             } catch (err) {
                 // may be a retry after the Account was made but its session wasn't: if the
                 // password matches, the session below signs them in; if not, the email is taken
-                if (!isAppwriteError(err, "user_already_exists")) throw err;
+                if (!isAppwriteType(err, "user_already_exists")) throw err;
             }
             try {
-                try {
-                    await account.createEmailPasswordSession({ email, password });
-                } catch (err) {
-                    // a session is still open, from an earlier attempt or someone else
-                    if (!isAppwriteError(err, "user_session_already_exists")) throw err;
-                    await replaceStaleSession({ email, password });
-                }
+                await openSession({ email, password });
             } catch (err) {
-                if (isAppwriteError(err, "user_invalid_credentials")) {
+                if (isAppwriteType(err, "user_invalid_credentials")) {
                     throw new AccountFormError("An account with this email already exists", "email-taken");
                 }
                 throw err;
@@ -107,17 +105,12 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
 
     const signIn = useCallback(async (details: SignInDetails) => {
         try {
-            try {
-                await account.createEmailPasswordSession(details);
-            } catch (err) {
-                if (!isAppwriteError(err, "user_session_already_exists")) throw err;
-                await replaceStaleSession(details);
-            }
+            await openSession(details);
             setSession({ status: "member", member: await fetchMember() });
         } catch (err) {
             // one message for a wrong password and an unknown email, so the form doesn't
             // reveal which emails have Accounts
-            if (isAppwriteError(err, "user_invalid_credentials")) {
+            if (isAppwriteType(err, "user_invalid_credentials")) {
                 throw new AccountFormError("Email or password is incorrect", "incorrect-credentials");
             }
             throw toAccountFormError(err);

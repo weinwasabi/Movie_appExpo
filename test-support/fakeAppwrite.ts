@@ -125,6 +125,7 @@ type Query = { method: string; attribute?: string; values?: unknown[] };
 const applyQueries = (documents: StoredDocument[], queries: string[]) => {
     const parsed = queries.map((query) => JSON.parse(query) as Query);
     let limit = 25;
+    let cursor: string | undefined;
     let matching = [...documents];
     for (const { method, attribute, values = [] } of parsed) {
         if (method === "equal") matching = matching.filter((document) => values.includes(document[attribute!]));
@@ -132,9 +133,13 @@ const applyQueries = (documents: StoredDocument[], queries: string[]) => {
             const direction = method === "orderDesc" ? -1 : 1;
             matching.sort((a, b) => (String(a[attribute!]) < String(b[attribute!]) ? -direction : direction));
         } else if (method === "limit") limit = values[0] as number;
+        else if (method === "cursorAfter") cursor = values[0] as string;
         else throw new Error(`fakeAppwrite doesn't support Query.${method}`);
     }
-    return { total: matching.length, documents: matching.slice(0, limit) };
+    const total = matching.length;
+    // cursors page through the filtered, ordered matches, as Appwrite's do
+    if (cursor) matching = matching.slice(matching.findIndex((document) => document.$id === cursor) + 1);
+    return { total, documents: matching.slice(0, limit) };
 };
 
 class FakeDatabases {

@@ -20,7 +20,7 @@
 
 **Test harness additions:** `test-support/fakeAppwrite.ts` now has an in-memory `Databases` with document-level security (reads, deletes, and lists see only documents whose permissions name the session's roles; creating needs a session and can't grant roles the creator lacks), `Query.equal`/`orderDesc`/`orderAsc`/`limit`, `failNext` for Databases methods, and `holdNext(method)` to hold a call until released. `fireEvent.press` resolves with the handler's return value, so `onPress` must not return the save's promise, or a held save deadlocks the test. Don't `screen.unmount()` mid-test with `renderRouter`: later tests in the file then fail to render.
 
-**For ticket 04:** `listSavedMovies` sends no `Query.limit`, so Appwrite returns at most 25; the Saved tab needs to page (cursor) or raise the limit.
+**For ticket 04:** `listSavedMovies` pages by cursor (100 per request) and returns the whole Saved list, so the Saved tab doesn't need to page itself.
 
 **For ticket 05:** the Guest's toggle is `disabled`; enable it when wiring the pending save.
 

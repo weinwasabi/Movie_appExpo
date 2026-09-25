@@ -17,7 +17,7 @@ jest.mock("@/services/api", () => ({
 
 const mockFetchMovieDetails = fetchMovieDetails as jest.MockedFunction<typeof fetchMovieDetails>;
 
-// the details header's bookmark reads who is signed in
+// the details header's Save toggle reads who is signed in
 const renderMovieDetails = () =>
     render(
         <SessionProvider>

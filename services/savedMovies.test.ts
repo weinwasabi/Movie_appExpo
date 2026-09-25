@@ -138,6 +138,19 @@ test("lists the Saved list newest first and counts it", async () => {
     expect(await countSavedMovies(ada)).toBe(2);
 });
 
+test("lists the whole Saved list, however many pages Appwrite splits it into", async () => {
+    const ada = signIn("ada");
+    const many = Array.from({ length: 130 }, (_, index) => movie({ id: index + 1, title: `Movie ${index + 1}` }));
+    for (const each of many) await saveMovie(ada, each);
+
+    const listed = await listSavedMovies(ada);
+
+    expect(listed).toHaveLength(130);
+    expect(listed[0].title).toBe("Movie 130");
+    expect(listed[129].title).toBe("Movie 1");
+    expect(await countSavedMovies(ada)).toBe(130);
+});
+
 test("reports a failure to save, unsave, or check", async () => {
     const ada = signIn("ada");
 

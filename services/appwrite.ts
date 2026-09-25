@@ -1,14 +1,11 @@
 // track users searches made
 
-import { AppwriteException, Databases, Query } from "react-native-appwrite";
-import { client } from "./appwriteClient";
+import { Query } from "react-native-appwrite";
+import { DATABASE_ID, databases as database, isAppwriteCode } from "./appwriteClient";
 import { documentIdFor } from "./documentId";
 import { posterUrl } from "./posterUrl";
 
-const DATABASE_ID = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
 const COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_COLLECTION_ID!;
-
-const database = new Databases(client);
 
 // Document id for a term's first row, so two concurrent first searches collide on one id.
 // Rows created before this keep their random ids; findTermDocument still finds them.
@@ -55,7 +52,7 @@ export const updateSearchCount = async (query: string, movie: Movie) => {
             },
         });
     } catch (err) {
-        if (!(err instanceof AppwriteException && err.code === 409)) throw err;
+        if (!isAppwriteCode(err, 409)) throw err;
         // a row for the term appeared since we looked (a concurrent first search, or a unique
         // index clash with an older row): count this search on whichever row holds the term
         const holder = await findTermDocument(query);
@@ -78,4 +75,3 @@ export const getTrendingMovies =async (): Promise<TrendingMovie[] | undefined> =
         return undefined;
     }
 } 
-        //check if a record of that search has already been stored

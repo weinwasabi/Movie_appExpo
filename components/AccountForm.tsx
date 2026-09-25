@@ -21,6 +21,17 @@ export const Field = ({ label, ...inputProps }: FieldProps) => (
   </View>
 );
 
+export const EmailField = (inputProps: Omit<FieldProps, "label">) => (
+  <Field
+    label="Email"
+    autoCapitalize="none"
+    autoComplete="email"
+    keyboardType="email-address"
+    textContentType="emailAddress"
+    {...inputProps}
+  />
+);
+
 type PasswordFieldProps = Omit<FieldProps, "label" | "secureTextEntry"> & { hint?: string };
 
 export const PasswordField = ({ hint, ...inputProps }: PasswordFieldProps) => {
@@ -87,8 +98,8 @@ export const AccountFormScreen = ({ title, children }: { title: string; children
   </SafeAreaView>
 );
 
-// submit's busy flag and inline problem, shared by both forms
-export const useAccountForm = (send: () => Promise<void>) => {
+// submit's busy flag and inline problem, shared by both forms; on success, goes back
+export const useAccountForm = (submitAccountDetails: () => Promise<void>) => {
   const [submitting, setSubmitting] = useState(false);
   const [problem, setProblem] = useState<AccountFormError | null>(null);
 
@@ -96,7 +107,7 @@ export const useAccountForm = (send: () => Promise<void>) => {
     setSubmitting(true);
     setProblem(null);
     try {
-      await send();
+      await submitAccountDetails();
       router.back();
     } catch (err) {
       setProblem(err as AccountFormError);

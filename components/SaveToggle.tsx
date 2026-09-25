@@ -5,9 +5,9 @@ import colors from "@/constants/colors";
 import { useSession } from "@/services/session";
 import { isMovieSaved, saveMovie, unsaveMovie } from "@/services/savedMovies";
 
-type BookmarkProps = { memberId: string | null; movie: MovieDetails };
+type SaveToggleButtonProps = { memberId: string | null; movie: MovieDetails };
 
-const Bookmark = ({ memberId, movie }: BookmarkProps) => {
+const SaveToggleButton = ({ memberId, movie }: SaveToggleButtonProps) => {
   // null until Appwrite has said whether this Member saved the movie; a Guest's stays null
   const [saved, setSaved] = useState<boolean | null>(null);
   const [pending, setPending] = useState(false);
@@ -66,13 +66,14 @@ const Bookmark = ({ memberId, movie }: BookmarkProps) => {
   );
 };
 
-// The bookmark in a movie's details header. For a Member it flips the moment it's tapped and
-// flips back if Appwrite refuses; for a Guest it shows outlined and does nothing yet.
+// The Save toggle in a movie's details header, drawn as a bookmark icon. For a Member it flips
+// the moment it's tapped and flips back if Appwrite refuses; for a Guest it shows outlined and
+// does nothing yet.
 const SaveToggle = ({ movie }: { movie: MovieDetails }) => {
   const { session } = useSession();
   const memberId = session.status === "member" ? session.member.id : null;
   // keyed, so signing in, out, or as someone else starts from a fresh, unknown saved state
-  return <Bookmark key={`${memberId}:${movie.id}`} memberId={memberId} movie={movie} />;
+  return <SaveToggleButton key={`${memberId}:${movie.id}`} memberId={memberId} movie={movie} />;
 };
 
 export default SaveToggle;
