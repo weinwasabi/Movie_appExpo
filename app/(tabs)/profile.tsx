@@ -1,42 +1,34 @@
+import { useCallback } from "react";
 import { icons } from "@/constants/icons";
 import colors from "@/constants/colors";
-import { View, Text, Image, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import Button from "@/components/Button";
+import SignInPrompt from "@/components/SignInPrompt";
 import { Member, useSession } from "@/services/session";
+import { countSavedMovies } from "@/services/savedMovies";
+import useFocusFetch from "@/services/useFocusFetch";
 
-const primaryButton = "w-full bg-accent rounded-lg py-3.5 items-center";
-const secondaryButton = "w-full bg-dark-100 rounded-lg py-3.5 items-center";
+const savedCountLabel = (count: number) => `${count} saved ${count === 1 ? "movie" : "movies"}`;
 
-const GuestProfile = () => (
-  <View className="flex justify-center items-center flex-1 flex-col gap-5">
-    <Image source={icons.person} className="size-10" tintColor="#fff" />
-    <Text className="text-white text-base text-center">
-      Sign in to save movies and find them here later.
-    </Text>
-    <Pressable accessibilityRole="button" onPress={() => router.push("/sign-up")} className={primaryButton}>
-      <Text className="text-white font-semibold text-base">Create account</Text>
-    </Pressable>
-    <Pressable accessibilityRole="button" onPress={() => router.push("/sign-in")} className={secondaryButton}>
-      <Text className="text-white font-semibold text-base">Sign in</Text>
-    </Pressable>
-  </View>
-);
+const MemberProfile = ({ member, onSignOut }: { member: Member; onSignOut: () => void }) => {
+  // on every visit, so saves and removals made elsewhere in the app are counted
+  const { data: savedCount } = useFocusFetch(useCallback(() => countSavedMovies(member.id), [member.id]));
 
-const MemberProfile = ({ member, onSignOut }: { member: Member; onSignOut: () => void }) => (
-  <View className="flex justify-center items-center flex-1 flex-col gap-5">
-    <View className="size-20 rounded-full bg-dark-100 items-center justify-center">
-      <Text className="text-light-100 font-bold text-3xl">{(member.name || member.email).charAt(0).toUpperCase()}</Text>
+  return (
+    <View className="flex justify-center items-center flex-1 flex-col gap-5">
+      <View className="size-20 rounded-full bg-dark-100 items-center justify-center">
+        <Text className="text-light-100 font-bold text-3xl">{(member.name || member.email).charAt(0).toUpperCase()}</Text>
+      </View>
+      <View className="items-center gap-1">
+        {member.name ? <Text className="text-white font-bold text-xl">{member.name}</Text> : null}
+        <Text className="text-light-200 text-sm">{member.email}</Text>
+      </View>
+      {savedCount !== null && <Text className="text-light-100 text-base">{savedCountLabel(savedCount)}</Text>}
+      <Button label="Sign out" look="secondary" onPress={onSignOut} />
     </View>
-    <View className="items-center gap-1">
-      {member.name ? <Text className="text-white font-bold text-xl">{member.name}</Text> : null}
-      <Text className="text-light-200 text-sm">{member.email}</Text>
-    </View>
-    <Pressable accessibilityRole="button" onPress={onSignOut} className={secondaryButton}>
-      <Text className="text-white font-semibold text-base">Sign out</Text>
-    </Pressable>
-  </View>
-);
+  );
+};
 
 const Profile = () => {
   const { session, signOut } = useSession();
@@ -46,9 +38,9 @@ const Profile = () => {
       {session.status === "loading" ? (
         <ActivityIndicator testID="profile-loading" size="large" color={colors.accent} className="flex-1 self-center" />
       ) : session.status === "member" ? (
-        <MemberProfile member={session.member} onSignOut={signOut} />
+        <MemberProfile key={session.member.id} member={session.member} onSignOut={signOut} />
       ) : (
-        <GuestProfile />
+        <SignInPrompt icon={icons.person} message="Sign in to save movies and find them here later." />
       )}
     </SafeAreaView>
   );
